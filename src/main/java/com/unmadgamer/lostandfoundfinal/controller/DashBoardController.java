@@ -58,7 +58,7 @@ public class DashBoardController {
     private Label score3Label;
 
     @FXML
-    private Button adminVerificationBtn; // NEW: Admin verification button
+    private Button adminVerificationBtn;
 
     private UserService userService;
     private User currentUser;
@@ -75,7 +75,7 @@ public class DashBoardController {
             loadUserData();
             loadStatistics();
             loadLeaderboard();
-            setupAdminFeatures(); // NEW: Setup admin features
+            setupAdminFeatures();
 
             // Debug data state
             debugDataState();
@@ -84,7 +84,7 @@ public class DashBoardController {
         }
     }
 
-    // NEW: Setup admin-specific features
+    // Setup admin-specific features
     private void setupAdminFeatures() {
         if (currentUser != null && currentUser.isAdmin()) {
             adminVerificationBtn.setVisible(true);
@@ -113,11 +113,10 @@ public class DashBoardController {
             profileImageView.setImage(profileImage);
         } catch (Exception e) {
             System.out.println("ℹ️  Profile image not found, using default");
-            // You can set a default image here
         }
     }
 
-    // NEW: Public method to refresh statistics (can be called from other controllers)
+    // Public method to refresh statistics (can be called from other controllers)
     public void refreshStatistics() {
         System.out.println("🔄 Refreshing dashboard statistics...");
         loadStatistics();
@@ -142,7 +141,7 @@ public class DashBoardController {
 
         System.out.println("📊 Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount + ", Returned: " + returnedCount);
 
-        // NEW: Show admin stats if user is admin
+        // Show admin stats if user is admin
         if (currentUser.isAdmin()) {
             int pendingVerification = itemService.getPendingVerificationCount();
             System.out.println("👑 Admin stats - Pending verification: " + pendingVerification);
@@ -192,27 +191,28 @@ public class DashBoardController {
         openWindow("/com/unmadgamer/lostandfoundfinal/returned-items.fxml", "Returned Items");
     }
 
-    // NEW: Admin Verification Panel
+    // UPDATED: Admin Verification Dashboard
     @FXML
     private void handleAdminVerification() {
         System.out.println("Clicked: Admin Verification");
         if (currentUser != null && currentUser.isAdmin()) {
             try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/admin-verification.fxml"));
+                // UPDATED: Point to the new verification dashboard
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml"));
                 Parent root = loader.load();
 
                 Stage stage = new Stage();
-                stage.setTitle("Admin Verification Panel - " + currentUser.getFirstName());
-                stage.setScene(new Scene(root, 900, 700));
+                stage.setTitle("Admin Verification Dashboard - " + currentUser.getFirstName());
+                stage.setScene(new Scene(root, 1200, 800));
                 stage.show();
 
-                System.out.println("✅ Admin verification panel opened");
+                System.out.println("✅ Admin verification dashboard opened");
             } catch (IOException e) {
-                System.err.println("❌ Error opening admin verification panel: " + e.getMessage());
-                showError("Cannot open Admin Panel: " + e.getMessage());
+                System.err.println("❌ Error opening admin verification dashboard: " + e.getMessage());
+                showError("Cannot open Verification Dashboard: " + e.getMessage());
             }
         } else {
-            showAlert("Access Denied", "You need administrator privileges to access the verification panel.");
+            showAlert("Access Denied", "You need administrator privileges to access the verification dashboard.");
         }
     }
 
@@ -248,7 +248,7 @@ public class DashBoardController {
             if (response == javafx.scene.control.ButtonType.OK) {
                 itemService.resetAllData();
                 showAlert("Data Reset", "All data has been reset successfully");
-                refreshStatistics(); // Refresh dashboard
+                refreshStatistics();
             }
         });
     }
@@ -276,9 +276,31 @@ public class DashBoardController {
         }
     }
 
+    // NEW: Admin Verification Dashboard (alternative navigation)
+    @FXML
+    private void handleAdminVerificationDashboard() {
+        if (currentUser != null && currentUser.isAdmin()) {
+            System.out.println("Clicked: Admin Verification Dashboard");
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml"));
+                Parent root = loader.load();
+
+                Stage stage = new Stage();
+                stage.setTitle("Admin Verification Dashboard");
+                stage.setScene(new Scene(root, 1200, 800));
+                stage.show();
+
+            } catch (IOException e) {
+                showError("Cannot open Verification Dashboard: " + e.getMessage());
+            }
+        } else {
+            showAlert("Access Denied", "You need administrator privileges to access the verification dashboard.");
+        }
+    }
+
     // ===== HELPER METHODS =====
 
-    // NEW: Open window with callback for refresh
+    // Open window with callback for refresh
     private void openWindowWithCallback(String fxmlPath, String title) {
         try {
             System.out.println("🚪 Attempting to open: " + fxmlPath);
