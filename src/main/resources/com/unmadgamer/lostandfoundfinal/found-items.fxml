@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.unmadgamer.lostandfoundfinal.controller.FoundItemsController"
+      spacing="20" alignment="TOP_CENTER" style="-fx-padding: 20;">
+
+   <Label text="Found Items" style="-fx-font-size: 24; -fx-font-weight: bold;"/>
+
+   <VBox spacing="15" style="-fx-padding: 20;">
+      <Label text="All Found Items Reported by Users" style="-fx-font-size: 16;"/>
+
+      <TableView fx:id="itemsTable" prefHeight="300.0" prefWidth="500.0">
+         <columns>
+            <TableColumn text="Item Name" prefWidth="120">
+               <cellValueFactory>
+                  <PropertyValueFactory property="itemName" />
+               </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Category" prefWidth="100">
+               <cellValueFactory>
+                  <PropertyValueFactory property="category" />
+               </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Date Found" prefWidth="100">
+               <cellValueFactory>
+                  <PropertyValueFactory property="date" />
+               </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Location" prefWidth="120">
+               <cellValueFactory>
+                  <PropertyValueFactory property="location" />
+               </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Reported By" prefWidth="120">
+               <cellValueFactory>
+                  <PropertyValueFactory property="reportedBy" />
+               </cellValueFactory>
+            </TableColumn>
+         </columns>
+      </TableView>
+
+      <HBox spacing="20" alignment="CENTER">
+         <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
+                 style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-pref-width: 150;"/>
+         <Button text="Refresh" onAction="#handleRefresh"
+                 style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-pref-width: 100;"/>
+      </HBox>
+   </VBox>
+</VBox>

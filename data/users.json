@@ -1,0 +1,25 @@
+[ {
+  "username" : "admin",
+  "password" : "admin123",
+  "email" : "admin@lostfound.com",
+  "firstName" : "System",
+  "lastName" : "Administrator",
+  "role" : "admin",
+  "fullName" : "System Administrator"
+}, {
+  "username" : "user",
+  "password" : "user123",
+  "email" : "user@lostfound.com",
+  "firstName" : "Regular",
+  "lastName" : "User",
+  "role" : "user",
+  "fullName" : "Regular User"
+}, {
+  "username" : "reza",
+  "password" : "rezareza",
+  "email" : "reza@reza.reza",
+  "firstName" : "reza",
+  "lastName" : "reza",
+  "role" : "user",
+  "fullName" : "reza reza"
+} ]

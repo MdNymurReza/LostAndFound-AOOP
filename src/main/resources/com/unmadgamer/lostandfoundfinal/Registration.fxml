@@ -1,0 +1,73 @@
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="530.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.unmadgamer.lostandfoundfinal.controller.RegistrationController">
+
+    <Label layoutX="98.0" layoutY="177.0" text="Username">
+        <font>
+          <Font name="Arial Rounded MT Bold" size="13.0" />
+        </font>
+    </Label>
+    <AnchorPane prefHeight="46.0" prefWidth="600.0" style="-fx-background-color: #FFD600;">
+        <Label layoutX="99.0" layoutY="4.0" prefHeight="37.0" prefWidth="169.0" text="User Registration">
+            <font>
+                <Font name="Arial Rounded MT Bold" size="18.0" />
+            </font>
+        </Label>
+    </AnchorPane>
+    <Label layoutX="99.0" layoutY="55.0" text="Firstname">
+        <font>
+          <Font name="Arial Rounded MT Bold" size="13.0" />
+        </font>
+    </Label>
+    <TextField fx:id="firstnameField" layoutX="99.0" layoutY="81.0" prefHeight="25.0" prefWidth="335.0" />
+    <Label layoutX="99.0" layoutY="116.0" text="Lastname">
+        <font>
+          <Font name="Arial Rounded MT Bold" size="13.0" />
+        </font>
+    </Label>
+    <TextField fx:id="lastnameField" layoutX="99.0" layoutY="143.0" prefHeight="25.0" prefWidth="335.0" />
+    <PasswordField fx:id="passwordField" layoutX="99.0" layoutY="329.0" prefHeight="25.0" prefWidth="335.0" />
+    <TextField fx:id="usernameField" layoutX="99.0" layoutY="205.0" prefHeight="25.0" prefWidth="335.0" />
+    <Label layoutX="99.0" layoutY="306.0" text="Password">
+        <font>
+          <Font name="Arial Rounded MT Bold" size="13.0" />
+        </font>
+    </Label>
+    <PasswordField fx:id="confirmPasswordField" layoutX="99.0" layoutY="393.0" prefHeight="25.0" prefWidth="335.0" />
+    <Label layoutX="98.0" layoutY="368.0" text="Confirm Password">
+        <font>
+          <Font name="Arial Rounded MT Bold" size="13.0" />
+        </font>
+    </Label>
+    <Button fx:id="registerButton" layoutX="199.0" layoutY="451.0" mnemonicParsing="false" onAction="#handleRegister" prefHeight="25.0" prefWidth="135.0" style="-fx-background-color: #FFD600;" text="Register">
+        <font>
+          <Font name="Arial Rounded MT Bold" size="13.0" />
+        </font>
+    </Button>
+    <Label layoutX="187.0" layoutY="492.0" prefHeight="16.0" prefWidth="123.0" text="Already registered?">
+        <font>
+          <Font name="Arial Rounded MT Bold" size="12.0" />
+        </font>
+    </Label>
+    <Button fx:id="loginButton" layoutX="300.0" layoutY="488.0" mnemonicParsing="false" onAction="#switchToLoginScene" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Login!" textFill="#0606e4" underline="true">
+        <font>
+          <Font name="Arial Rounded MT Bold" size="12.0" />
+        </font>
+    </Button>
+   <Label fx:id="registerMessageField" alignment="CENTER" layoutX="79.0" layoutY="428.0" prefHeight="16.0" prefWidth="375.0" textFill="#f60505">
+      <font>
+         <Font name="Arial Rounded MT Bold" size="13.0" />
+      </font>
+   </Label>
+   <TextField fx:id="emailField" layoutX="99.0" layoutY="269.0" prefHeight="25.0" prefWidth="335.0" />
+   <Label layoutX="100.0" layoutY="241.0" text="Email">
+      <font>
+         <Font name="Arial Rounded MT Bold" size="13.0" />
+      </font>
+   </Label>
+</AnchorPane>

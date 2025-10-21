@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.unmadgamer.lostandfoundfinal.controller.LostItemsController"
+      spacing="20" alignment="TOP_CENTER" style="-fx-padding: 20;">
+
+   <Label text="Lost Items" style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+   <VBox spacing="15" style="-fx-padding: 20;">
+      <Label text="All items reported as lost by users" style="-fx-font-size: 14; -fx-text-fill: #7f8c8d;"/>
+
+      <!-- Items Table -->
+      <TableView fx:id="itemsTable" prefHeight="300.0" prefWidth="550.0" style="-fx-font-size: 12;">
+         <columns>
+            <TableColumn text="Item Name" prefWidth="120">
+               <cellValueFactory>
+                  <PropertyValueFactory property="itemName" />
+               </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Category" prefWidth="100">
+               <cellValueFactory>
+                  <PropertyValueFactory property="category" />
+               </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Date Lost" prefWidth="100">
+               <cellValueFactory>
+                  <PropertyValueFactory property="date" />
+               </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Location" prefWidth="120">
+               <cellValueFactory>
+                  <PropertyValueFactory property="location" />
+               </cellValueFactory>
+            </TableColumn>
+            <TableColumn text="Reported By" prefWidth="100">
+               <cellValueFactory>
+                  <PropertyValueFactory property="reportedBy" />
+               </cellValueFactory>
+            </TableColumn>
+         </columns>
+      </TableView>
+
+      <!-- Status Information -->
+      <HBox spacing="10" alignment="CENTER_LEFT">
+         <Label text="Total Lost Items:" style="-fx-font-weight: bold;"/>
+         <Label fx:id="totalItemsLabel" text="0" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold;"/>
+      </HBox>
+
+      <!-- Action Buttons -->
+      <HBox spacing="20" alignment="CENTER">
+         <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
+                 style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-pref-width: 150; -fx-pref-height: 35;"/>
+         <Button text="Refresh" onAction="#handleRefresh"
+                 style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-pref-width: 100; -fx-pref-height: 35;"/>
+         <Button text="Mark as Returned" onAction="#handleMarkAsReturned"
+                 style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-pref-width: 140; -fx-pref-height: 35;"/>
+      </HBox>
+
+      <!-- Instructions -->
+      <VBox spacing="5" style="-fx-padding: 10; -fx-background-color: #ecf0f1; -fx-background-radius: 5;">
+         <Label text="Instructions:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+         <Label text="1. Select an item from the table to mark it as returned" style="-fx-text-fill: #7f8c8d;"/>
+         <Label text="2. Click 'Refresh' to update the list" style="-fx-text-fill: #7f8c8d;"/>
+         <Label text="3. Click 'Back to Dashboard' to return to main menu" style="-fx-text-fill: #7f8c8d;"/>
+      </VBox>
+   </VBox>
+</VBox>

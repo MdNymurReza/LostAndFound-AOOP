@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.gluonhq.charm.glisten.control.Icon?>
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" styleClass="parent" stylesheets="@Stylesheet.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lost_and_found.controller.ReturnItemsController">
+   <center>
+      <AnchorPane prefHeight="200.0" prefWidth="200.0" styleClass="body-center" stylesheets="@Stylesheet.css" BorderPane.alignment="CENTER">
+         <BorderPane.margin>
+            <Insets top="30.0" />
+         </BorderPane.margin>
+         <children>
+            <VBox layoutX="-2.0" layoutY="-2.0" prefHeight="370.0" prefWidth="398.0">
+               <children>
+                  <Text fill="#008cff" strokeType="OUTSIDE" strokeWidth="0.0" text="Return Items">
+                     <font>
+                        <Font name="Calibri Bold" size="36.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets left="105.0" top="22.0" />
+                     </VBox.margin>
+                  </Text>
+                  <HBox prefHeight="90.0" prefWidth="200.0">
+                     <VBox.margin>
+                        <Insets top="8.0" />
+                     </VBox.margin>
+                     <children>
+                        <AnchorPane prefHeight="90.0" prefWidth="360.0" stylesheets="@Stylesheet.css">
+                           <HBox.margin>
+                              <Insets left="20.0" />
+                           </HBox.margin>
+                           <children>
+                              <Icon content="BOOK" layoutX="155.0" layoutY="20.0" prefHeight="50.0" prefWidth="50.0" />
+                              <Button layoutX="225.0" layoutY="27.0" mnemonicParsing="false" prefHeight="36.0" prefWidth="119.0" styleClass="submit-button" stylesheets="@Stylesheet.css" text="Return" textFill="WHITE">
+                                 <font>
+                                    <Font name="Calibri Bold" size="18.0" />
+                                 </font>
+                              </Button>
+                              <Label layoutX="14.0" layoutY="16.0" stylesheets="@Stylesheet.css" text="Item Name" textFill="#5bb5ff">
+                                 <font>
+                                    <Font name="Calibri" size="18.0" />
+                                 </font>
+                              </Label>
+                              <Text fill="#7c8084" layoutX="14.0" layoutY="48.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Category : " wrappingWidth="64.7591552734375">
+                                 <font>
+                                    <Font name="Calibri Bold" size="14.0" />
+                                 </font>
+                              </Text>
+                              <Text fill="#7c8084" layoutX="14.0" layoutY="66.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Date : ">
+                                 <font>
+                                    <Font name="Calibri Bold" size="14.0" />
+                                 </font>
+                              </Text>
+                              <Label layoutX="55.0" layoutY="55.0" text="12 October 2025" textFill="#7c8084">
+                                 <font>
+                                    <Font name="System Bold" size="11.0" />
+                                 </font>
+                              </Label>
+                              <Label layoutX="79.0" layoutY="37.0" text="Wallet" textFill="#7c8084">
+                                 <font>
+                                    <Font name="System Bold" size="11.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                           <styleClass>
+                              <String fx:value="items" />
+                              <String fx:value="item-button" />
+                           </styleClass>
+                        </AnchorPane>
+                     </children>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="10.0" prefHeight="90.0" prefWidth="200.0">
+                     <VBox.margin>
+                        <Insets top="10.0" />
+                     </VBox.margin>
+                     <children>
+                        <AnchorPane prefHeight="90.0" prefWidth="360.0" stylesheets="@Stylesheet.css">
+                           <children>
+                              <Icon content="BOOK" layoutX="155.0" layoutY="20.0" prefHeight="50.0" prefWidth="50.0" />
+                              <Button layoutX="225.0" layoutY="27.0" mnemonicParsing="false" prefHeight="36.0" prefWidth="119.0" styleClass="submit-button" stylesheets="@Stylesheet.css" text="Returned" textFill="WHITE">
+                                 <font>
+                                    <Font name="Calibri Bold" size="18.0" />
+                                 </font>
+                              </Button>
+                              <Label layoutX="14.0" layoutY="16.0" stylesheets="@Stylesheet.css" text="Item Name" textFill="#5bb5ff">
+                                 <font>
+                                    <Font name="Calibri" size="18.0" />
+                                 </font>
+                              </Label>
+                              <Text fill="#7c8084" layoutX="14.0" layoutY="48.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Category : " wrappingWidth="64.7591552734375">
+                                 <font>
+                                    <Font name="Calibri Bold" size="14.0" />
+                                 </font>
+                              </Text>
+                              <Text fill="#7c8084" layoutX="14.0" layoutY="66.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Date : ">
+                                 <font>
+                                    <Font name="Calibri Bold" size="14.0" />
+                                 </font>
+                              </Text>
+                              <Label layoutX="55.0" layoutY="55.0" text="12 October 2025" textFill="#7c8084">
+                                 <font>
+                                    <Font name="System Bold" size="11.0" />
+                                 </font>
+                              </Label>
+                              <Label layoutX="79.0" layoutY="37.0" text="Wallet" textFill="#7c8084">
+                                 <font>
+                                    <Font name="System Bold" size="11.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                           <styleClass>
+                              <String fx:value="items" />
+                              <String fx:value="item-button" />
+                           </styleClass>
+                           <opaqueInsets>
+                              <Insets />
+                           </opaqueInsets>
+                           <HBox.margin>
+                              <Insets left="20.0" />
+                           </HBox.margin>
+                        </AnchorPane>
+                     </children>
+                  </HBox>
+                  <HBox prefHeight="90.0" prefWidth="200.0">
+                     <children>
+                        <AnchorPane prefHeight="90.0" prefWidth="360.0" stylesheets="@Stylesheet.css">
+                           <children>
+                              <Icon content="BOOK" layoutX="155.0" layoutY="20.0" prefHeight="50.0" prefWidth="50.0" />
+                              <Button layoutX="225.0" layoutY="27.0" mnemonicParsing="false" prefHeight="36.0" prefWidth="119.0" styleClass="submit-button" stylesheets="@Stylesheet.css" text="Return" textFill="WHITE">
+                                 <font>
+                                    <Font name="Calibri Bold" size="18.0" />
+                                 </font>
+                              </Button>
+                              <Label layoutX="14.0" layoutY="16.0" stylesheets="@Stylesheet.css" text="Item Name" textFill="#5bb5ff">
+                                 <font>
+                                    <Font name="Calibri" size="18.0" />
+                                 </font>
+                              </Label>
+                              <Text fill="#7c8084" layoutX="14.0" layoutY="48.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Category : " wrappingWidth="64.7591552734375">
+                                 <font>
+                                    <Font name="Calibri Bold" size="14.0" />
+                                 </font>
+                              </Text>
+                              <Text fill="#7c8084" layoutX="14.0" layoutY="66.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Date : ">
+                                 <font>
+                                    <Font name="Calibri Bold" size="14.0" />
+                                 </font>
+                              </Text>
+                              <Label layoutX="55.0" layoutY="55.0" text="12 October 2025" textFill="#7c8084">
+                                 <font>
+                                    <Font name="System Bold" size="11.0" />
+                                 </font>
+                              </Label>
+                              <Label layoutX="79.0" layoutY="37.0" text="Wallet" textFill="#7c8084">
+                                 <font>
+                                    <Font name="System Bold" size="11.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                           <styleClass>
+                              <String fx:value="items" />
+                              <String fx:value="item-button" />
+                           </styleClass>
+                           <HBox.margin>
+                              <Insets left="20.0" top="10.0" />
+                           </HBox.margin>
+                        </AnchorPane>
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+         </children>
+      </AnchorPane>
+   </center>
+   <left>
+      <AnchorPane prefHeight="370.0" prefWidth="185.0" styleClass="sidebar" stylesheets="@Stylesheet.css" BorderPane.alignment="CENTER">
+         <BorderPane.margin>
+            <Insets left="5.0" right="10.0" top="30.0" />
+         </BorderPane.margin>
+         <children>
+            <AnchorPane prefHeight="354.0" prefWidth="183.0" stylesheets="@Stylesheet.css">
+               <padding>
+                  <Insets top="31.0" />
+               </padding>
+               <styleClass>
+                  <String fx:value="sidebar" />
+                  <String fx:value="sidebar" />
+               </styleClass>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
+   </left>
+</BorderPane>

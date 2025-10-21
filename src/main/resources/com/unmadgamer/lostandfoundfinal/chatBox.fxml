@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lost_and_found.controller.ChatController">
+
+    <left>
+        <AnchorPane prefHeight="449.0" prefWidth="200.0" styleClass="sidebar" stylesheets="@Stylesheet.css" BorderPane.alignment="CENTER">
+            <BorderPane.margin>
+                <Insets top="-13.0" />
+            </BorderPane.margin>
+            <children>
+                <VBox fx:id="usersListContainer" layoutY="13.0" prefHeight="400.0" prefWidth="233.0">
+                    <children>
+                        <!-- Search Bar -->
+                        <HBox prefHeight="45.0" prefWidth="202.0">
+                            <children>
+                                <TextField fx:id="searchField" prefHeight="26.0" prefWidth="186.0" promptText="Search Chat" styleClass="form-style" stylesheets="@Stylesheet.css">
+                                    <HBox.margin>
+                                        <Insets bottom="1.0" left="24.0" top="13.0" />
+                                    </HBox.margin>
+                                </TextField>
+                            </children>
+                        </HBox>
+                        <!-- User list will be populated dynamically by controller -->
+                    </children>
+                </VBox>
+            </children>
+        </AnchorPane>
+    </left>
+
+    <center>
+        <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
+            <children>
+                <!-- Chat Header -->
+                <HBox prefHeight="46.0" prefWidth="366.0">
+                    <children>
+                        <Label fx:id="currentChatUserLabel" text="Select a user">
+                            <font>
+                                <Font name="System Bold" size="16.0" />
+                            </font>
+                            <HBox.margin>
+                                <Insets left="11.0" top="10.0" />
+                            </HBox.margin>
+                        </Label>
+                        <Circle fx:id="onlineStatusCircle" fill="TRANSPARENT" radius="5.0" stroke="BLACK" strokeType="INSIDE">
+                            <HBox.margin>
+                                <Insets left="19.0" top="18.0" />
+                            </HBox.margin>
+                        </Circle>
+                        <Label fx:id="onlineStatusLabel" text="Offline">
+                            <font>
+                                <Font size="14.0" />
+                            </font>
+                            <HBox.margin>
+                                <Insets left="5.0" top="14.0" />
+                            </HBox.margin>
+                        </Label>
+                    </children>
+                </HBox>
+
+                <!-- Chat Messages Area -->
+                <ScrollPane fx:id="chatScrollPane" prefHeight="286.0" prefWidth="366.0">
+                    <!-- Content will be populated dynamically by controller -->
+                </ScrollPane>
+
+                <!-- Message Input Area -->
+                <HBox prefHeight="66.0" prefWidth="366.0" styleClass="body-center-chat" stylesheets="@Stylesheet.css">
+                    <children>
+                        <TextField fx:id="messageField" prefHeight="47.0" prefWidth="278.0" promptText="Type something to send..." styleClass="form-style" stylesheets="@Stylesheet.css">
+                            <HBox.margin>
+                                <Insets left="17.0" top="10.0" />
+                            </HBox.margin>
+                        </TextField>
+                  <Button fx:id="sentButton" mnemonicParsing="false" prefHeight="64.0" prefWidth="77.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Sent" textFill="#3207f4">
+                     <font>
+                        <Font name="Arial Rounded MT Bold" size="13.0" />
+                     </font>
+                  </Button>
+                    </children>
+                    <opaqueInsets>
+                        <Insets />
+                    </opaqueInsets>
+                    <VBox.margin>
+                        <Insets />
+                    </VBox.margin>
+                </HBox>
+            </children>
+        </VBox>
+    </center>
+</BorderPane>

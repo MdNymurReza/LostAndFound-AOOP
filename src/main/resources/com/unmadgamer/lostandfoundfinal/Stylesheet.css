@@ -1,0 +1,73 @@
+.parent{
+    -fx-background-color : #008CFF;
+    -fx-background-radius : 1;
+}
+
+.sidebar{
+    -fx-background-color : #A2D5FF;
+    -fx-background-radius : 15px 15px 0px 0px ;
+}
+
+.body-center{
+    -fx-background-color : #E1E1E1;
+    -fx-background-radius : 15px 0px 0px 0px;
+}
+.hBox{
+    -fx-backround-radius : 15px;
+}
+.lost-form{
+    -fx-background-color : #FD1414;
+    -fx-background-radius : 10px;
+    -fx-font-
+}
+
+.found-form{
+    -fx-background-color : #47FD14;
+    -fx-background-radius : 10px;
+}
+
+.item-button{
+    -fx-background-color : #FFFFFF;
+    -fx-background-radius : 10px;
+    -fx-border-radius : 10px;
+}
+
+.number-font{
+    -fx-background-color : red;
+}
+
+.form-style{
+    -fx-background-color: #FFFFFF;
+    -fx-border-radius : 10px;
+    -fx-background-radius : 10px;
+
+}
+
+.submit-button{
+    -fx-background-color : #008CFF;
+    -fx-background-radius : 20px;
+}
+
+.outgoing-bubble{
+    -fx-background-color : #50c984;
+    -fx-background-radius : 10px;
+}
+
+.incoming-bubble{
+    -fx-background-color : #FFFFFF;
+    -fx-background-radius : 10px;
+}
+
+.body-center-chat{
+    -fx-background-color : #E1E1E1;
+}
+
+.item-button {
+    -fx-cursor: hand;
+}
+
+.item-button:hover {
+    -fx-background-color: #d5dbdb;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
