@@ -98,8 +98,10 @@ public class DashBoardController {
 
     private void debugDataState() {
         System.out.println("=== DASHBOARD DATA STATE ===");
-        itemService.debugCurrentData();
-        userService.debugUsers();
+        System.out.println("Current user: " + currentUser.getUsername());
+        System.out.println("Total items in system: " + itemService.getAllItems().size());
+        System.out.println("Pending verification: " + itemService.getPendingVerificationCount());
+        System.out.println("Verified items: " + itemService.getVerifiedItems().size());
         System.out.println("=== END DATA STATE ===");
     }
 
@@ -113,6 +115,7 @@ public class DashBoardController {
             profileImageView.setImage(profileImage);
         } catch (Exception e) {
             System.out.println("ℹ️  Profile image not found, using default");
+            // Set a default image or leave as is
         }
     }
 
@@ -125,38 +128,77 @@ public class DashBoardController {
     private void loadStatistics() {
         String currentUsername = userService.getCurrentUser().getUsername();
 
-        // Force refresh data before calculating statistics
-        itemService.refreshData();
+        // Calculate user-specific statistics
+        int lostCount = (int) itemService.getAllItems().stream()
+                .filter(item -> item.getReportedBy().equals(currentUsername) && item.getType().equals("lost"))
+                .count();
 
-        int lostCount = itemService.getLostItemsCount(currentUsername);
-        int foundCount = itemService.getFoundItemsCount(currentUsername);
-        int returnedCount = itemService.getReturnedItemsCount(currentUsername);
+        int foundCount = (int) itemService.getAllItems().stream()
+                .filter(item -> item.getReportedBy().equals(currentUsername) && item.getType().equals("found"))
+                .count();
 
-        int rewardPoints = (foundCount * 10) + (returnedCount * 20);
+        int returnedCount = (int) itemService.getAllItems().stream()
+                .filter(item -> item.getReportedBy().equals(currentUsername) && "returned".equals(item.getStatus()))
+                .count();
+
+        // Calculate reward points based on user activity
+        int rewardPoints = calculateRewardPoints(currentUsername);
 
         lostItemsLabel.setText(String.valueOf(lostCount));
         foundItemsLabel.setText(String.valueOf(foundCount));
         returnedItemsLabel.setText(String.valueOf(returnedCount));
         rewardPointsLabel.setText(String.valueOf(rewardPoints));
 
-        System.out.println("📊 Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount + ", Returned: " + returnedCount);
+        System.out.println("📊 Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount + ", Returned: " + returnedCount + ", Points: " + rewardPoints);
 
         // Show admin stats if user is admin
         if (currentUser.isAdmin()) {
-            int pendingVerification = itemService.getPendingVerificationCount();
-            System.out.println("👑 Admin stats - Pending verification: " + pendingVerification);
+            int pendingVerification = (int) itemService.getPendingVerificationCount();
+            int totalVerified = (int) itemService.getTotalVerifiedCount();
+            System.out.println("👑 Admin stats - Pending verification: " + pendingVerification + ", Total verified: " + totalVerified);
         }
     }
 
-    private void loadLeaderboard() {
-        // For now, set some dummy leaderboard data
-        rank1Label.setText("1. " + currentUser.getFirstName() + " " + currentUser.getLastName());
-        rank2Label.setText("2. John Smith");
-        rank3Label.setText("3. Sarah Johnson");
+    private int calculateRewardPoints(String username) {
+        int points = 0;
 
-        score1Label.setText("1530");
-        score2Label.setText("1520");
-        score3Label.setText("1510");
+        // Points for reporting found items
+        long foundItems = itemService.getAllItems().stream()
+                .filter(item -> item.getReportedBy().equals(username) && item.getType().equals("found") && item.isVerified())
+                .count();
+        points += foundItems * 10;
+
+        // Points for successful returns (items claimed by others)
+        long returnedItems = itemService.getAllItems().stream()
+                .filter(item -> item.getReportedBy().equals(username) && "returned".equals(item.getStatus()))
+                .count();
+        points += returnedItems * 20;
+
+        // Bonus points for verified items
+        long verifiedItems = itemService.getAllItems().stream()
+                .filter(item -> item.getReportedBy().equals(username) && item.isVerified())
+                .count();
+        points += verifiedItems * 5;
+
+        return points;
+    }
+
+    private void loadLeaderboard() {
+        // Simple leaderboard based on reward points
+        // In a real application, you'd calculate this from all users
+        int userPoints = Integer.parseInt(rewardPointsLabel.getText());
+
+        rank1Label.setText("1. " + currentUser.getFirstName() + " " + currentUser.getLastName());
+        score1Label.setText(String.valueOf(userPoints));
+
+        // For demo purposes, show some sample users
+        rank2Label.setText("2. John Smith");
+        score2Label.setText(String.valueOf(userPoints - 10));
+
+        rank3Label.setText("3. Sarah Johnson");
+        score3Label.setText(String.valueOf(userPoints - 20));
+
+        System.out.println("🏆 Leaderboard loaded - User rank: #1 with " + userPoints + " points");
     }
 
     // ===== NAVIGATION METHODS =====
@@ -197,7 +239,6 @@ public class DashBoardController {
         System.out.println("Clicked: Admin Verification");
         if (currentUser != null && currentUser.isAdmin()) {
             try {
-                // UPDATED: Point to the new verification dashboard
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml"));
                 Parent root = loader.load();
 
@@ -226,13 +267,14 @@ public class DashBoardController {
     private void handleRefreshDashboard() {
         System.out.println("Clicked: Refresh Dashboard");
         refreshStatistics();
+        loadLeaderboard();
         showAlert("Refreshed", "Dashboard statistics have been updated!");
     }
 
     @FXML
     private void handleDataDebug() {
         System.out.println("Clicked: Data Debug");
-        itemService.debugCurrentData();
+        debugDataState();
         showAlert("Data Debug", "Check console for data debug information");
     }
 
@@ -246,7 +288,16 @@ public class DashBoardController {
 
         alert.showAndWait().ifPresent(response -> {
             if (response == javafx.scene.control.ButtonType.OK) {
-                itemService.resetAllData();
+                // Reset data through JsonDataService
+                itemService.getAllItems().clear(); // Clear in-memory data
+                userService.getAllUsers().removeIf(user -> !user.isAdmin()); // Keep only admin users
+
+                // Save the reset state
+                com.unmadgamer.lostandfoundfinal.service.JsonDataService jsonDataService =
+                        new com.unmadgamer.lostandfoundfinal.service.JsonDataService();
+                jsonDataService.saveItems(itemService.getAllItems());
+                jsonDataService.saveUsers(userService.getAllUsers());
+
                 showAlert("Data Reset", "All data has been reset successfully");
                 refreshStatistics();
             }
@@ -263,7 +314,7 @@ public class DashBoardController {
             currentStage.close();
 
             // Open login window
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/Login.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/login.fxml"));
             Parent root = loader.load();
             Stage loginStage = new Stage();
             loginStage.setTitle("Lost and Found System - Login");
@@ -273,28 +324,6 @@ public class DashBoardController {
             System.out.println("✅ Logout successful");
         } catch (IOException e) {
             showError("Cannot logout: " + e.getMessage());
-        }
-    }
-
-    // NEW: Admin Verification Dashboard (alternative navigation)
-    @FXML
-    private void handleAdminVerificationDashboard() {
-        if (currentUser != null && currentUser.isAdmin()) {
-            System.out.println("Clicked: Admin Verification Dashboard");
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml"));
-                Parent root = loader.load();
-
-                Stage stage = new Stage();
-                stage.setTitle("Admin Verification Dashboard");
-                stage.setScene(new Scene(root, 1200, 800));
-                stage.show();
-
-            } catch (IOException e) {
-                showError("Cannot open Verification Dashboard: " + e.getMessage());
-            }
-        } else {
-            showAlert("Access Denied", "You need administrator privileges to access the verification dashboard.");
         }
     }
 

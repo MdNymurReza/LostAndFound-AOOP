@@ -1,6 +1,6 @@
 package com.unmadgamer.lostandfoundfinal.controller;
 
-import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
+import com.unmadgamer.lostandfoundfinal.model.LostItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.fxml.FXML;
@@ -33,6 +33,9 @@ public class LostFormController {
     @FXML
     private TextField contactInfoField;
 
+    @FXML
+    private TextField rewardField;
+
     private ItemService itemService;
     private UserService userService;
 
@@ -49,56 +52,75 @@ public class LostFormController {
 
         System.out.println("📝 LostFormController initialized for user: " +
                 (userService.getCurrentUser() != null ? userService.getCurrentUser().getUsername() : "Unknown"));
+
+        // Debug: Check if services are properly initialized
+        System.out.println("🔧 ItemService instance: " + (itemService != null ? "OK" : "NULL"));
+        System.out.println("🔧 UserService instance: " + (userService != null ? "OK" : "NULL"));
     }
 
     @FXML
     private void handleSubmit() {
+        System.out.println("🔄 Submit button clicked in Lost Form");
+
         if (validateInput()) {
             String currentUser = userService.getCurrentUser().getUsername();
 
             // Format the date properly
             String formattedDate = lostDatePicker.getValue().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-            // Create the lost item
-            LostFoundItem lostItem = new LostFoundItem(
-                    itemNameField.getText().trim(),
-                    categoryField.getText().trim(),
-                    descriptionField.getText().trim(),
-                    locationField.getText().trim(),
-                    "lost", // status
-                    currentUser // reportedBy
-            );
-
-            // Set additional fields
+            // Create the lost item using the LostItem subclass
+            LostItem lostItem = new LostItem();
+            lostItem.setItemName(itemNameField.getText().trim());
+            lostItem.setCategory(categoryField.getText().trim());
+            lostItem.setDescription(descriptionField.getText().trim());
+            lostItem.setLocation(locationField.getText().trim());
+            lostItem.setReportedBy(currentUser);
             lostItem.setDate(formattedDate);
             lostItem.setContactInfo(contactInfoField.getText().trim());
+            lostItem.setLostDate(formattedDate);
+            lostItem.setReward(rewardField.getText().trim());
 
-            System.out.println("➕ Adding lost item: " + itemNameField.getText());
-            System.out.println("📋 Item details - Category: " + categoryField.getText() +
-                    ", Location: " + locationField.getText() +
-                    ", Verified: " + lostItem.isVerified());
+            // Set initial status
+            lostItem.setStatus("pending");
+            lostItem.setVerificationStatus("pending");
 
-            itemService.addItem(lostItem);
+            System.out.println("➕ Attempting to add lost item: " + lostItem.getItemName());
+            System.out.println("📋 Item details - Category: " + lostItem.getCategory() +
+                    ", Location: " + lostItem.getLocation() +
+                    ", Reward: " + lostItem.getReward() +
+                    ", Reported by: " + lostItem.getReportedBy());
 
-            showSuccess("Lost item reported successfully!\n\n" +
-                    "Item: " + itemNameField.getText() + "\n" +
-                    "Category: " + categoryField.getText() + "\n" +
-                    "Location: " + locationField.getText() + "\n\n" +
-                    "🔍 Your item has been added to the lost items list.\n" +
-                    "You will be notified if someone finds it!");
+            if (itemService.addLostItem(lostItem)) {
+                System.out.println("✅ Lost item added successfully!");
+                showSuccess("Lost item reported successfully!\n\n" +
+                        "Item: " + lostItem.getItemName() + "\n" +
+                        "Category: " + lostItem.getCategory() + "\n" +
+                        "Location Lost: " + lostItem.getLocation() + "\n" +
+                        "Reward: " + (lostItem.getReward() != null && !lostItem.getReward().isEmpty() ? lostItem.getReward() : "Not specified") + "\n\n" +
+                        "🔍 Your item has been added to the lost items list.\n" +
+                        "You will be notified if someone finds it!\n\n" +
+                        "📋 The item is now pending admin verification.");
 
-            clearForm();
-            closeWindow();
+                clearForm();
+                closeWindow();
+            } else {
+                System.err.println("❌ Failed to add lost item to service");
+                showError("Failed to save lost item. Please try again.");
+            }
+        } else {
+            System.out.println("❌ Form validation failed");
         }
     }
 
     @FXML
     private void handleBackToDashboard() {
+        System.out.println("🔙 Back to dashboard clicked");
         closeWindow();
     }
 
     @FXML
     private void handleClearForm() {
+        System.out.println("🗑️ Clear form clicked");
         clearForm();
         showAlert("Form Cleared", "All form fields have been cleared.", Alert.AlertType.INFORMATION);
     }
@@ -139,7 +161,7 @@ public class LostFormController {
 
         // Location validation
         if (locationField.getText().trim().isEmpty()) {
-            errors.append("• Location is required\n");
+            errors.append("• Location where item was lost is required\n");
         } else if (locationField.getText().trim().length() < 3) {
             errors.append("• Location must be at least 3 characters\n");
         }
@@ -158,11 +180,18 @@ public class LostFormController {
             errors.append("• Please provide valid contact information (email or phone)\n");
         }
 
+        // Reward validation (optional)
+        String reward = rewardField.getText().trim();
+        if (!reward.isEmpty() && reward.length() < 2) {
+            errors.append("• Reward description must be at least 2 characters if provided\n");
+        }
+
         if (errors.length() > 0) {
             showError("Please fix the following errors:\n\n" + errors.toString());
             return false;
         }
 
+        System.out.println("✅ Form validation passed");
         return true;
     }
 
@@ -183,6 +212,7 @@ public class LostFormController {
         categoryField.clear();
         descriptionField.clear();
         locationField.clear();
+        rewardField.clear();
         lostDatePicker.setValue(LocalDate.now());
 
         // Reset contact info to user's email

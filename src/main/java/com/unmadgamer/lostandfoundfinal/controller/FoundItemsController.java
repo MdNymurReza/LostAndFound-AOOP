@@ -1,324 +1,306 @@
 package com.unmadgamer.lostandfoundfinal.controller;
 
+import com.unmadgamer.lostandfoundfinal.model.FoundItem;
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class FoundItemsController {
 
-    @FXML
-    private Label userNameLabel;
+    @FXML private TableView<LostFoundItem> itemsTable;
+    @FXML private TableColumn<LostFoundItem, String> colItemName;
+    @FXML private TableColumn<LostFoundItem, String> colCategory;
+    @FXML private TableColumn<LostFoundItem, String> colDescription;
+    @FXML private TableColumn<LostFoundItem, String> colLocation;
+    @FXML private TableColumn<LostFoundItem, String> colDate;
+    @FXML private TableColumn<LostFoundItem, String> colStatus;
+    @FXML private TableColumn<LostFoundItem, String> colActions;
 
-    @FXML
-    private TableView<LostFoundItem> itemsTable;
-
-    @FXML
-    private TableColumn<LostFoundItem, String> colItemName;
-
-    @FXML
-    private TableColumn<LostFoundItem, String> colCategory;
-
-    @FXML
-    private TableColumn<LostFoundItem, String> colDate;
-
-    @FXML
-    private TableColumn<LostFoundItem, String> colLocation;
-
-    @FXML
-    private TableColumn<LostFoundItem, String> colReportedBy;
-
-    @FXML
-    private TableColumn<LostFoundItem, String> colVerification;
-
-    @FXML
-    private TextField searchField;
-
-    @FXML
-    private ComboBox<String> filterCombo;
+    @FXML private TextField searchField;
+    @FXML private ComboBox<String> categoryFilter;
+    @FXML private Label welcomeLabel;
 
     private ItemService itemService;
     private UserService userService;
-    private ObservableList<LostFoundItem> itemsData;
-    private List<LostFoundItem> allFoundItems;
+    private ObservableList<LostFoundItem> allItems;
+    private ObservableList<LostFoundItem> filteredItems;
 
     @FXML
     public void initialize() {
         itemService = ItemService.getInstance();
         userService = UserService.getInstance();
-        itemsData = FXCollections.observableArrayList();
 
-        // Set up table columns
-        setupTableColumns();
-        setupEventHandlers();
-
-        itemsTable.setItems(itemsData);
-
-        if (userService.getCurrentUser() != null) {
-            loadFoundItems();
-            userNameLabel.setText(userService.getCurrentUser().getFirstName() + " " + userService.getCurrentUser().getLastName());
-        }
+        initializeTable();
+        setupFilters();
+        setupClaimFunctionality();
+        loadItems();
+        updateWelcomeMessage();
     }
 
-    private void setupTableColumns() {
+    private void initializeTable() {
         colItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         colCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
-        colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        colDescription.setCellValueFactory(new PropertyValueFactory<>("description"));
         colLocation.setCellValueFactory(new PropertyValueFactory<>("location"));
-        colReportedBy.setCellValueFactory(new PropertyValueFactory<>("reportedBy"));
+        colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        // FIXED: Use proper cell factory for verification status
-        colVerification.setCellFactory(col -> new TableCell<LostFoundItem, String>() {
+        // Actions column with Claim button
+        colActions.setCellFactory(param -> new TableCell<LostFoundItem, String>() {
+            private final Button claimBtn = new Button("Claim");
+            {
+                claimBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;");
+                claimBtn.setOnAction(event -> {
+                    LostFoundItem item = getTableView().getItems().get(getIndex());
+                    handleClaimItem(item);
+                });
+            }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty) {
-                    setText(null);
-                    setStyle("");
+                    setGraphic(null);
                 } else {
-                    LostFoundItem lostFoundItem = getTableView().getItems().get(getIndex());
-                    if (lostFoundItem.isVerified()) {
-                        setText("✓ Verified");
-                        setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
+                    LostFoundItem currentItem = getTableView().getItems().get(getIndex());
+                    // Only show claim button for verified items that aren't already returned
+                    if (currentItem.isVerified() && !"returned".equals(currentItem.getStatus())) {
+                        claimBtn.setText("Claim");
+                        claimBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+                        setGraphic(claimBtn);
+                    } else if ("returned".equals(currentItem.getStatus())) {
+                        claimBtn.setText("Returned");
+                        claimBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
+                        claimBtn.setDisable(true);
+                        setGraphic(claimBtn);
                     } else {
-                        setText("⏳ Pending");
-                        setStyle("-fx-text-fill: #e67e22; -fx-font-weight: bold;");
+                        setGraphic(null);
                     }
                 }
             }
         });
 
-        // Add context menu for admin actions
-        if (userService.getCurrentUser() != null && userService.getCurrentUser().isAdmin()) {
-            setupContextMenu();
-        }
+        allItems = FXCollections.observableArrayList();
+        filteredItems = FXCollections.observableArrayList();
+        itemsTable.setItems(filteredItems);
     }
 
-    private void setupContextMenu() {
-        ContextMenu contextMenu = new ContextMenu();
+    private void setupFilters() {
+        categoryFilter.setItems(FXCollections.observableArrayList(
+                "All", "Electronics", "Documents", "Clothing", "Accessories", "Bags", "Books", "Other"
+        ));
+        categoryFilter.setValue("All");
 
-        MenuItem verifyItem = new MenuItem("Verify Item");
-        verifyItem.setOnAction(e -> verifySelectedItem());
-
-        MenuItem viewDetails = new MenuItem("View Details");
-        viewDetails.setOnAction(e -> showSelectedItemDetails());
-
-        MenuItem markReturned = new MenuItem("Mark as Returned");
-        markReturned.setOnAction(e -> handleMarkAsReturned());
-
-        contextMenu.getItems().addAll(verifyItem, viewDetails, markReturned);
-        itemsTable.setContextMenu(contextMenu);
-    }
-
-    private void setupEventHandlers() {
+        // Search functionality
         searchField.textProperty().addListener((observable, oldValue, newValue) -> filterItems());
-
-        // Initialize filter combo
-        filterCombo.getItems().addAll("All Items", "Verified Only", "Pending Verification");
-        filterCombo.setValue("All Items");
-        filterCombo.valueProperty().addListener((observable, oldValue, newValue) -> filterItems());
+        categoryFilter.valueProperty().addListener((observable, oldValue, newValue) -> filterItems());
     }
 
-    private void loadFoundItems() {
-        String currentUser = userService.getCurrentUser().getUsername();
-
-        // If user is admin, show all found items. Otherwise, show only user's items
-        if (userService.getCurrentUser().isAdmin()) {
-            allFoundItems = itemService.getItemsByStatus("found");
-        } else {
-            allFoundItems = itemService.getUserItemsByStatus(currentUser, "found");
-        }
-
-        itemsData.setAll(allFoundItems);
-        System.out.println("📋 Loaded " + allFoundItems.size() + " found items for user: " + currentUser);
-
-        // Update table with admin actions if applicable
-        updateTableForAdmin();
+    private void setupClaimFunctionality() {
+        // Double-click to view details and claim
+        itemsTable.setRowFactory(tv -> {
+            TableRow<LostFoundItem> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    LostFoundItem item = row.getItem();
+                    showItemDetails(item);
+                }
+            });
+            return row;
+        });
     }
 
-    private void updateTableForAdmin() {
-        if (userService.getCurrentUser().isAdmin()) {
-            System.out.println("👑 Admin mode: Showing all found items in the system");
-        }
+    private void loadItems() {
+        List<LostFoundItem> items = itemService.getAvailableFoundItems();
+        allItems.setAll(items);
+        filteredItems.setAll(items);
+
+        System.out.println("✅ Loaded " + items.size() + " found items for user");
     }
 
     private void filterItems() {
         String searchText = searchField.getText().toLowerCase();
-        String filterValue = filterCombo.getValue();
+        String category = categoryFilter.getValue();
 
-        List<LostFoundItem> filteredItems = allFoundItems.stream()
+        List<LostFoundItem> filtered = allItems.stream()
                 .filter(item ->
                         item.getItemName().toLowerCase().contains(searchText) ||
-                                item.getCategory().toLowerCase().contains(searchText) ||
-                                item.getLocation().toLowerCase().contains(searchText) ||
-                                item.getReportedBy().toLowerCase().contains(searchText)
-                )
-                .filter(item -> {
-                    if (filterValue == null || "All Items".equals(filterValue)) {
-                        return true;
-                    } else if ("Verified Only".equals(filterValue)) {
-                        return item.isVerified();
-                    } else if ("Pending Verification".equals(filterValue)) {
-                        return !item.isVerified();
-                    }
-                    return true;
-                })
-                .toList();
+                                item.getDescription().toLowerCase().contains(searchText) ||
+                                item.getLocation().toLowerCase().contains(searchText))
+                .filter(item -> category.equals("All") || item.getCategory().equals(category))
+                .collect(Collectors.toList());
 
-        itemsData.setAll(filteredItems);
+        filteredItems.setAll(filtered);
     }
 
-    private void verifySelectedItem() {
-        LostFoundItem selectedItem = itemsTable.getSelectionModel().getSelectedItem();
-        if (selectedItem != null) {
-            if (selectedItem.isVerified()) {
-                showAlert("Already Verified", "This item is already verified.");
-                return;
-            }
+    private void updateWelcomeMessage() {
+        String username = userService.getCurrentUser().getUsername();
+        welcomeLabel.setText("Welcome, " + username + "! Browse found items below.");
+    }
 
-            Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmAlert.setTitle("Confirm Verification");
-            confirmAlert.setHeaderText("Verify Item: " + selectedItem.getItemName());
-            confirmAlert.setContentText("Are you sure you want to verify this found item?");
+    @FXML
+    private void handleClaimItem(LostFoundItem item) {
+        String claimant = userService.getCurrentUser().getUsername();
 
-            confirmAlert.showAndWait().ifPresent(response -> {
-                if (response == ButtonType.OK) {
-                    boolean success = itemService.verifyItem(
-                            selectedItem.getItemName(),
-                            userService.getCurrentUser().getUsername()
-                    );
-
-                    if (success) {
-                        showAlert("Verification Successful",
-                                "Item '" + selectedItem.getItemName() + "' has been verified successfully!");
-                        loadFoundItems(); // Refresh the list
-                    } else {
-                        showError("Verification Failed", "Could not verify the selected item.");
-                    }
-                }
-            });
-        } else {
-            showAlert("No Selection", "Please select an item to verify.", Alert.AlertType.WARNING);
+        // Check if item is already returned
+        if ("returned".equals(item.getStatus())) {
+            showAlert("Already Returned",
+                    "This item has already been returned to its owner!",
+                    Alert.AlertType.WARNING);
+            return;
         }
-    }
 
-    private void showSelectedItemDetails() {
-        LostFoundItem selectedItem = itemsTable.getSelectionModel().getSelectedItem();
-        if (selectedItem != null) {
-            showItemDetails(selectedItem);
-        } else {
-            showAlert("No Selection", "Please select an item to view details.", Alert.AlertType.WARNING);
+        // Check if user is trying to claim their own found item
+        if (item.getReportedBy().equals(claimant)) {
+            showAlert("Cannot Claim",
+                    "You cannot claim an item you reported as found!",
+                    Alert.AlertType.WARNING);
+            return;
+        }
+
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Claim Found Item");
+        confirmAlert.setHeaderText("Claim '" + item.getItemName() + "'?");
+        confirmAlert.setContentText(
+                "Are you sure this is your lost item?\n\n" +
+                        "Item Details:\n" +
+                        "• Name: " + item.getItemName() + "\n" +
+                        "• Category: " + item.getCategory() + "\n" +
+                        "• Location Found: " + item.getLocation() + "\n" +
+                        "• Date Found: " + item.getDate() + "\n\n" +
+                        "You will need to provide proof of ownership. Admin verification will be required."
+        );
+
+        confirmAlert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+
+        if (confirmAlert.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
+            if (itemService.claimItem(item.getId(), claimant)) {
+                showAlert("Claim Submitted",
+                        "Your claim request has been submitted successfully!\n\n" +
+                                "Please wait for admin approval. You will need to provide proof of ownership to receive the item.",
+                        Alert.AlertType.INFORMATION);
+                loadItems(); // Refresh the table
+            } else {
+                showAlert("Claim Failed",
+                        "Failed to submit claim request. Please try again.",
+                        Alert.AlertType.ERROR);
+            }
         }
     }
 
     private void showItemDetails(LostFoundItem item) {
-        StringBuilder details = new StringBuilder();
-        details.append("=== FOUND ITEM DETAILS ===\n\n");
-        details.append("Item Name: ").append(item.getItemName()).append("\n");
-        details.append("Category: ").append(item.getCategory()).append("\n");
-        details.append("Description: ").append(item.getDescription()).append("\n");
-        details.append("Location: ").append(item.getLocation()).append("\n");
-        details.append("Date Found: ").append(item.getDate()).append("\n");
-        details.append("Reported By: ").append(item.getReportedBy()).append("\n");
-        details.append("Contact Info: ").append(item.getContactInfo() != null ? item.getContactInfo() : "Not provided").append("\n");
-        details.append("Unique ID: ").append(item.getUniqueId()).append("\n\n");
-
-        details.append("=== VERIFICATION STATUS ===\n");
-        if (item.isVerified()) {
-            details.append("✅ VERIFIED\n");
-            details.append("Verified By: ").append(item.getVerifiedBy()).append("\n");
-            details.append("Verification Date: ").append(item.getVerificationDate()).append("\n");
-        } else {
-            details.append("⏳ PENDING VERIFICATION\n");
-            details.append("This item is waiting for admin verification.\n");
-        }
-
-        TextArea textArea = new TextArea(details.toString());
-        textArea.setEditable(false);
-        textArea.setWrapText(true);
-        textArea.setPrefSize(500, 300);
-
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Item Details");
-        alert.setHeaderText("Found Item: " + item.getItemName());
-        alert.getDialogPane().setContent(textArea);
+        alert.setHeaderText(item.getItemName());
+
+        String details =
+                "Category: " + item.getCategory() + "\n" +
+                        "Description: " + item.getDescription() + "\n" +
+                        "Location Found: " + item.getLocation() + "\n" +
+                        "Date Found: " + item.getDate() + "\n" +
+                        "Reported by: " + item.getReportedBy() + "\n" +
+                        "Status: " + getStatusDisplay(item.getStatus()) + "\n" +
+                        "Verification: " + getVerificationStatus(item) + "\n\n";
+
+        // Add FoundItem specific details
+        if (item instanceof FoundItem) {
+            FoundItem foundItem = (FoundItem) item;
+            details += "Storage Location: " + foundItem.getStorageLocation() + "\n";
+            if (foundItem.getClaimedBy() != null) {
+                details += "Claimed by: " + foundItem.getClaimedBy() + "\n";
+                details += "Claim Status: " + foundItem.getClaimStatus() + "\n";
+            }
+        }
+
+        alert.setContentText(details);
         alert.showAndWait();
+    }
+
+    private String getStatusDisplay(String status) {
+        switch (status) {
+            case "pending": return "⏳ Pending Verification";
+            case "verified": return "✅ Verified - Available for Claim";
+            case "returned": return "📦 Returned to Owner";
+            case "rejected": return "❌ Rejected";
+            default: return status;
+        }
+    }
+
+    private String getVerificationStatus(LostFoundItem item) {
+        if (item.isVerified()) {
+            return "✅ Verified by " + item.getVerifiedBy();
+        } else if (item.isRejected()) {
+            return "❌ Rejected by " + item.getVerifiedBy();
+        } else {
+            return "⏳ Pending Admin Verification";
+        }
     }
 
     @FXML
     private void handleRefresh() {
-        System.out.println("🔄 Refresh button clicked - Found Items");
-        loadFoundItems();
-        showAlert("Refreshed", "Found items list has been refreshed.");
+        loadItems();
+        showAlert("Refreshed", "Found items list has been updated.", Alert.AlertType.INFORMATION);
+    }
+
+    @FXML
+    private void handleSearch() {
+        filterItems();
+    }
+
+    @FXML
+    private void handleClearFilters() {
+        searchField.clear();
+        categoryFilter.setValue("All");
+        filteredItems.setAll(allItems);
     }
 
     @FXML
     private void handleBackToDashboard() {
-        closeWindow();
+        try {
+            Stage currentStage = (Stage) itemsTable.getScene().getWindow();
+            currentStage.close();
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/dashboard.fxml"));
+            Parent root = loader.load();
+
+            Stage dashboardStage = new Stage();
+            dashboardStage.setTitle("Dashboard - Lost and Found System");
+            dashboardStage.setScene(new Scene(root, 600, 450));
+            dashboardStage.show();
+        } catch (IOException e) {
+            showAlert("Navigation Error", "Cannot open dashboard: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
     }
 
     @FXML
-    private void handleMarkAsReturned() {
-        LostFoundItem selectedItem = itemsTable.getSelectionModel().getSelectedItem();
-        if (selectedItem != null) {
-            if (!selectedItem.isVerified()) {
-                showError("Cannot Mark Returned", "This item must be verified by an admin before it can be marked as returned.");
-                return;
-            }
-
-            Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmAlert.setTitle("Mark as Returned");
-            confirmAlert.setHeaderText("Mark Item as Returned: " + selectedItem.getItemName());
-            confirmAlert.setContentText("Are you sure you want to mark this item as returned to its owner?");
-
-            confirmAlert.showAndWait().ifPresent(response -> {
-                if (response == ButtonType.OK) {
-                    boolean success = itemService.updateItemStatus(
-                            selectedItem.getItemName(),
-                            "returned",
-                            userService.getCurrentUser().getUsername()
-                    );
-
-                    if (success) {
-                        showAlert("Success", "Item '" + selectedItem.getItemName() + "' has been marked as returned!");
-                        loadFoundItems(); // Refresh the list
-                    } else {
-                        showError("Failed", "Could not mark the item as returned.");
-                    }
-                }
-            });
-        } else {
-            showAlert("No Selection", "Please select an item to mark as returned.", Alert.AlertType.WARNING);
-        }
-    }
-
-    private void closeWindow() {
+    private void handleReportFoundItem() {
         try {
-            Stage currentStage = (Stage) userNameLabel.getScene().getWindow();
+            Stage currentStage = (Stage) itemsTable.getScene().getWindow();
             currentStage.close();
-            System.out.println("✅ Found items window closed");
-        } catch (Exception e) {
-            System.err.println("❌ Error closing window: " + e.getMessage());
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/found-form.fxml"));
+            Parent root = loader.load();
+
+            Stage formStage = new Stage();
+            formStage.setTitle("Report Found Item - Lost and Found System");
+            formStage.setScene(new Scene(root, 600, 700));
+            formStage.show();
+        } catch (IOException e) {
+            showAlert("Navigation Error", "Cannot open found item form: " + e.getMessage(), Alert.AlertType.ERROR);
         }
-    }
-
-    private void showError(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    private void showAlert(String title, String message) {
-        showAlert(title, message, Alert.AlertType.INFORMATION);
     }
 
     private void showAlert(String title, String message, Alert.AlertType type) {

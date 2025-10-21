@@ -54,6 +54,13 @@
          <TextField fx:id="contactInfoField" promptText="Your email or phone number for contact"
                     style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
       </VBox>
+
+      <!-- Reward (Optional) -->
+      <VBox spacing="5">
+         <Label text="Reward (Optional)" style="-fx-font-weight: bold;"/>
+         <TextField fx:id="rewardField" promptText="Optional reward for finding the item"
+                    style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
+      </VBox>
    </VBox>
 
    <!-- Action Buttons -->
@@ -72,5 +79,6 @@
       <Label text="• Fill all required fields marked with *" style="-fx-text-fill: #856404; -fx-font-size: 12;"/>
       <Label text="• Provide detailed description for better identification" style="-fx-text-fill: #856404; -fx-font-size: 12;"/>
       <Label text="• You will be notified if someone finds your item" style="-fx-text-fill: #856404; -fx-font-size: 12;"/>
+      <Label text="• Reward field is optional but can help motivate people to look for your item" style="-fx-text-fill: #856404; -fx-font-size: 12;"/>
    </VBox>
 </VBox>

@@ -50,8 +50,10 @@ public class ReturnedItemsController {
     }
 
     private void loadReturnedItems() {
-        // Get all returned items (not just user's) since returned items are system-wide
-        allReturnedItems = itemService.getItemsByStatus("returned");
+        // Get all items with "returned" status
+        allReturnedItems = itemService.getAllItems().stream()
+                .filter(item -> "returned".equals(item.getStatus()))
+                .collect(Collectors.toList());
         updateStatistics();
         displayItems(allReturnedItems);
 
@@ -134,6 +136,11 @@ public class ReturnedItemsController {
             footer.getChildren().add(verifiedByLabel);
         }
 
+        // Show who reported the item
+        Label reportedByLabel = new Label("👤 Reported by: " + item.getReportedBy());
+        reportedByLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 13px;");
+        footer.getChildren().add(reportedByLabel);
+
         Region footerSpacer = new Region();
         HBox.setHgrow(footerSpacer, Priority.ALWAYS);
 
@@ -167,7 +174,7 @@ public class ReturnedItemsController {
 
         confirmAlert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                boolean success = itemService.verifyItem(item.getItemName(), userService.getCurrentUser().getUsername());
+                boolean success = itemService.verifyItem(item.getId(), userService.getCurrentUser().getUsername());
                 if (success) {
                     showAlert("Success", "Returned item has been verified successfully!");
                     loadReturnedItems(); // Refresh the list
@@ -216,7 +223,7 @@ public class ReturnedItemsController {
         details.append("Date: ").append(item.getDate()).append("\n");
         details.append("Reported By: ").append(item.getReportedBy()).append("\n");
         details.append("Contact Info: ").append(item.getContactInfo() != null ? item.getContactInfo() : "Not provided").append("\n");
-        details.append("Unique ID: ").append(item.getUniqueId()).append("\n\n");
+        details.append("Item ID: ").append(item.getId()).append("\n\n");
 
         details.append("=== VERIFICATION STATUS ===\n");
         if (item.isVerified()) {
@@ -230,7 +237,10 @@ public class ReturnedItemsController {
 
         details.append("\n=== RETURN INFORMATION ===\n");
         details.append("Status: RETURNED\n");
-        details.append("This item has been successfully returned to its owner.");
+        details.append("This item has been successfully returned to its owner.\n");
+
+        // Add item type information
+        details.append("Item Type: ").append(item.getType()).append("\n");
 
         TextArea textArea = new TextArea(details.toString());
         textArea.setEditable(false);
@@ -270,7 +280,8 @@ public class ReturnedItemsController {
 
         for (LostFoundItem item : allReturnedItems) {
             System.out.println("• " + item.getItemName() + " | " + item.getCategory() +
-                    " | " + item.getLocation() + " | Verified: " + item.isVerified());
+                    " | " + item.getLocation() + " | Verified: " + item.isVerified() +
+                    " | Reported by: " + item.getReportedBy());
         }
 
         showAlert("Report Generated", "Returned items report has been generated in the console.\nTotal items: " + allReturnedItems.size());

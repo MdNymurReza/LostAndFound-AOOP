@@ -36,8 +36,15 @@
 
       <!-- Location -->
       <VBox spacing="5">
-         <Label text="Location *" style="-fx-font-weight: bold;"/>
+         <Label text="Location Found *" style="-fx-font-weight: bold;"/>
          <TextField fx:id="locationField" promptText="Where did you find it? (e.g., Main Library, Cafeteria)"
+                    style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
+      </VBox>
+
+      <!-- Storage Location -->
+      <VBox spacing="5">
+         <Label text="Current Storage Location *" style="-fx-font-weight: bold;"/>
+         <TextField fx:id="storageLocationField" promptText="Where is the item currently stored?"
                     style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
       </VBox>
 
@@ -71,6 +78,7 @@
       <Label text="📝 Instructions:" style="-fx-font-weight: bold; -fx-text-fill: #0c5460;"/>
       <Label text="• Fill all required fields marked with *" style="-fx-text-fill: #0c5460; -fx-font-size: 12;"/>
       <Label text="• Provide detailed description for better identification" style="-fx-text-fill: #0c5460; -fx-font-size: 12;"/>
-      <Label text="• Admin will verify the item before marking as returned" style="-fx-text-fill: #0c5460; -fx-font-size: 12;"/>
+      <Label text="• Storage location is where the item can be collected from" style="-fx-text-fill: #0c5460; -fx-font-size: 12;"/>
+      <Label text="• Admin will verify the item before marking as available for claim" style="-fx-text-fill: #0c5460; -fx-font-size: 12;"/>
    </VBox>
 </VBox>

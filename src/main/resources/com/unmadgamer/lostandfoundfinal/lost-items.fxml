@@ -7,47 +7,66 @@
 
 <VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.unmadgamer.lostandfoundfinal.controller.LostItemsController"
-      spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;">
+      spacing="20" style="-fx-padding: 25; -fx-background-color: #f8f9fa;" prefHeight="600" prefWidth="1000">
 
    <!-- Header -->
    <HBox alignment="CENTER_LEFT" spacing="15">
       <VBox spacing="5">
          <Label text="Lost Items" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-         <Label fx:id="subtitleLabel" text="Track and manage your lost items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
+         <Label fx:id="welcomeLabel" text="Browse lost items reported by users" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
       </VBox>
       <Region HBox.hgrow="ALWAYS"/>
+      <Button text="Report Lost Item" onAction="#handleReportLostItem"
+              style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
       <Button text="Refresh" onAction="#handleRefresh"
-              style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+              style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
       <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
-              style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+              style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
    </HBox>
 
-   <!-- Stats and Filters -->
-   <HBox spacing="20" alignment="CENTER_LEFT">
-      <!-- Stats Cards -->
-      <VBox spacing="5" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 1); -fx-padding: 15;">
-         <Label text="Total Lost Items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 12;"/>
-         <Label fx:id="totalItemsLabel" text="0" style="-fx-text-fill: #e74c3c; -fx-font-size: 24; -fx-font-weight: bold;"/>
-      </VBox>
+   <!-- Search and Filter Section -->
+   <VBox spacing="10" style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 1);">
+      <Label text="Search &amp; Filter" style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+      <HBox spacing="15" alignment="CENTER_LEFT">
+         <TextField fx:id="searchField" promptText="Search lost items..."
+                    style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8 15;"
+                    prefWidth="300"/>
+         <ComboBox fx:id="categoryFilter" promptText="Filter by category"
+                   style="-fx-background-radius: 8; -fx-border-radius: 8;"
+                   prefWidth="150"/>
+         <Region HBox.hgrow="ALWAYS"/>
+         <Button text="Search" onAction="#handleSearch"
+                 style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;"/>
+         <Button text="Clear Filters" onAction="#handleClearFilters"
+                 style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;"/>
+      </HBox>
+   </VBox>
 
-      <VBox spacing="5" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 1); -fx-padding: 15;">
-         <Label text="Verified Items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 12;"/>
-         <Label fx:id="verifiedItemsLabel" text="0" style="-fx-text-fill: #27ae60; -fx-font-size: 24; -fx-font-weight: bold;"/>
-      </VBox>
+   <!-- Items Table -->
+   <VBox spacing="10" VBox.vgrow="ALWAYS">
+      <Label text="Available Lost Items" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #e74c3c;"/>
+      <TableView fx:id="itemsTable" VBox.vgrow="ALWAYS">
+         <columns>
+            <TableColumn fx:id="colItemName" text="Item Name" prefWidth="150"/>
+            <TableColumn fx:id="colCategory" text="Category" prefWidth="120"/>
+            <TableColumn fx:id="colDescription" text="Description" prefWidth="200"/>
+            <TableColumn fx:id="colLocation" text="Location" prefWidth="120"/>
+            <TableColumn fx:id="colDate" text="Date Lost" prefWidth="100"/>
+            <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
+            <TableColumn fx:id="colActions" text="Actions" prefWidth="100"/>
+         </columns>
+         <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+         </columnResizePolicy>
+      </TableView>
+   </VBox>
 
-      <Region HBox.hgrow="ALWAYS"/>
-
-      <!-- Search and Filter -->
-      <TextField fx:id="searchField" promptText="Search lost items..."
-                 style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8 15;"
-                 prefWidth="200"/>
-      <ComboBox fx:id="filterCombo" promptText="Filter by status"
-                style="-fx-background-radius: 8; -fx-border-radius: 8;"
-                prefWidth="150"/>
-   </HBox>
-
-   <!-- Items Container -->
-   <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-border-color: transparent;">
-      <VBox fx:id="itemsContainer" spacing="15" style="-fx-padding: 10;"/>
-   </ScrollPane>
+   <!-- Instructions -->
+   <VBox spacing="5" style="-fx-padding: 15; -fx-background-color: #fff3cd; -fx-border-color: #ffeaa7; -fx-border-radius: 8;">
+      <Label text="💡 How to Use:" style="-fx-font-weight: bold; -fx-text-fill: #856404;"/>
+      <Label text="• Double-click on any item to view detailed information" style="-fx-text-fill: #856404; -fx-font-size: 11;"/>
+      <Label text="• Click the 'Claim' button if you believe the item belongs to you" style="-fx-text-fill: #856404; -fx-font-size: 11;"/>
+      <Label text="• Use search and filters to find specific items" style="-fx-text-fill: #856404; -fx-font-size: 11;"/>
+      <Label text="• Only verified items can be claimed (marked with ✅)" style="-fx-text-fill: #856404; -fx-font-size: 11;"/>
+   </VBox>
 </VBox>

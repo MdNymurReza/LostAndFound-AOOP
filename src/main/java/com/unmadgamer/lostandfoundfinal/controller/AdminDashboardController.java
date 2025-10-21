@@ -22,6 +22,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AdminDashboardController {
 
@@ -160,8 +161,14 @@ public class AdminDashboardController {
         // Load statistics
         List<User> allUsers = userService.getAllUsers();
         List<LostFoundItem> allItems = itemService.getAllItems();
-        List<LostFoundItem> pendingItems = itemService.getItemsPendingVerification();
-        List<LostFoundItem> returnedItems = itemService.getItemsByStatus("returned");
+
+        // Get pending verification items
+        List<LostFoundItem> pendingItems = itemService.getPendingVerificationItems();
+
+        // Get returned items
+        List<LostFoundItem> returnedItems = allItems.stream()
+                .filter(item -> "returned".equals(item.getStatus()) || "claimed".equals(item.getStatus()))
+                .collect(Collectors.toList());
 
         totalUsersLabel.setText(String.valueOf(allUsers.size()));
         totalItemsLabel.setText(String.valueOf(allItems.size()));
@@ -179,8 +186,9 @@ public class AdminDashboardController {
 
         // Load recent items (last 10 items)
         List<LostFoundItem> recentItems = allItems.stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())) // Sort by creation date descending
                 .limit(10)
-                .toList();
+                .collect(Collectors.toList());
         ObservableList<LostFoundItem> itemsData = FXCollections.observableArrayList(recentItems);
         recentItemsTable.setItems(itemsData);
 
@@ -192,26 +200,32 @@ public class AdminDashboardController {
     }
 
     private void createCharts() {
-        // Items by Status Chart
-        CategoryAxis statusAxis = new CategoryAxis();
-        NumberAxis countAxis = new NumberAxis();
-        BarChart<String, Number> statusChart = new BarChart<>(statusAxis, countAxis);
-        statusChart.setTitle("Items by Status");
-        statusChart.setLegendVisible(false);
-        statusChart.setPrefHeight(250);
+        // Clear existing charts
+        chartsContainer.getChildren().clear();
 
-        XYChart.Series<String, Number> statusSeries = new XYChart.Series<>();
         List<LostFoundItem> allItems = itemService.getAllItems();
 
-        long lostCount = allItems.stream().filter(LostFoundItem::isLost).count();
-        long foundCount = allItems.stream().filter(LostFoundItem::isFound).count();
-        long returnedCount = allItems.stream().filter(LostFoundItem::isReturned).count();
+        // Items by Type Chart
+        CategoryAxis typeAxis = new CategoryAxis();
+        NumberAxis typeCountAxis = new NumberAxis();
+        BarChart<String, Number> typeChart = new BarChart<>(typeAxis, typeCountAxis);
+        typeChart.setTitle("Items by Type");
+        typeChart.setLegendVisible(false);
+        typeChart.setPrefHeight(250);
 
-        statusSeries.getData().add(new XYChart.Data<>("Lost", lostCount));
-        statusSeries.getData().add(new XYChart.Data<>("Found", foundCount));
-        statusSeries.getData().add(new XYChart.Data<>("Returned", returnedCount));
+        XYChart.Series<String, Number> typeSeries = new XYChart.Series<>();
 
-        statusChart.getData().add(statusSeries);
+        long lostCount = allItems.stream()
+                .filter(item -> "lost".equals(item.getType()))
+                .count();
+        long foundCount = allItems.stream()
+                .filter(item -> "found".equals(item.getType()))
+                .count();
+
+        typeSeries.getData().add(new XYChart.Data<>("Lost", lostCount));
+        typeSeries.getData().add(new XYChart.Data<>("Found", foundCount));
+
+        typeChart.getData().add(typeSeries);
 
         // Verification Status Chart
         CategoryAxis verificationAxis = new CategoryAxis();
@@ -231,10 +245,44 @@ public class AdminDashboardController {
 
         verificationChart.getData().add(verificationSeries);
 
-        // Add charts to container
-        HBox chartsRow = new HBox(20);
-        chartsRow.getChildren().addAll(statusChart, verificationChart);
-        chartsContainer.getChildren().add(chartsRow);
+        // Item Status Chart
+        CategoryAxis statusAxis = new CategoryAxis();
+        NumberAxis statusCountAxis = new NumberAxis();
+        BarChart<String, Number> statusChart = new BarChart<>(statusAxis, statusCountAxis);
+        statusChart.setTitle("Item Status");
+        statusChart.setLegendVisible(false);
+        statusChart.setPrefHeight(250);
+
+        XYChart.Series<String, Number> statusSeries = new XYChart.Series<>();
+
+        long pendingStatus = allItems.stream()
+                .filter(item -> "pending".equals(item.getStatus()))
+                .count();
+        long verifiedStatus = allItems.stream()
+                .filter(item -> "verified".equals(item.getStatus()))
+                .count();
+        long claimedStatus = allItems.stream()
+                .filter(item -> "claimed".equals(item.getStatus()))
+                .count();
+        long returnedStatus = allItems.stream()
+                .filter(item -> "returned".equals(item.getStatus()))
+                .count();
+
+        statusSeries.getData().add(new XYChart.Data<>("Pending", pendingStatus));
+        statusSeries.getData().add(new XYChart.Data<>("Verified", verifiedStatus));
+        statusSeries.getData().add(new XYChart.Data<>("Claimed", claimedStatus));
+        statusSeries.getData().add(new XYChart.Data<>("Returned", returnedStatus));
+
+        statusChart.getData().add(statusSeries);
+
+        // Add charts to container in rows
+        HBox firstRow = new HBox(20);
+        firstRow.getChildren().addAll(typeChart, verificationChart);
+
+        HBox secondRow = new HBox(20);
+        secondRow.getChildren().add(statusChart);
+
+        chartsContainer.getChildren().addAll(firstRow, secondRow);
     }
 
     private void toggleUserStatus(User user) {
@@ -251,8 +299,9 @@ public class AdminDashboardController {
 
         confirmAlert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                // In a real application, you would call a service method to update user status
-                // For now, we'll just reload the data to show the concept
+                // Toggle user active status
+                user.setActive(!user.isActive());
+                userService.getAllUsers(); // This will trigger save through the service
                 showAlert("Success", "User " + user.getUsername() + " has been " + action + "d.");
                 loadDashboardData();
             }
@@ -271,7 +320,6 @@ public class AdminDashboardController {
     @FXML
     private void handleItemVerification() {
         try {
-            // UPDATED: Point to the new verification dashboard instead of old panel
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml"));
             Parent root = loader.load();
 
@@ -295,23 +343,48 @@ public class AdminDashboardController {
         // Generate system report
         List<User> allUsers = userService.getAllUsers();
         List<LostFoundItem> allItems = itemService.getAllItems();
+        List<LostFoundItem> pendingItems = itemService.getPendingVerificationItems();
+        List<LostFoundItem> returnedItems = allItems.stream()
+                .filter(item -> "returned".equals(item.getStatus()) || "claimed".equals(item.getStatus()))
+                .collect(Collectors.toList());
 
         StringBuilder report = new StringBuilder();
         report.append("=== SYSTEM REPORT ===\n\n");
         report.append("Statistics:\n");
         report.append("• Total Users: ").append(allUsers.size()).append("\n");
         report.append("• Total Items: ").append(allItems.size()).append("\n");
-        report.append("• Pending Verification: ").append(itemService.getItemsPendingVerification().size()).append("\n");
-        report.append("• Returned Items: ").append(itemService.getItemsByStatus("returned").size()).append("\n\n");
+        report.append("• Pending Verification: ").append(pendingItems.size()).append("\n");
+        report.append("• Returned/Claimed Items: ").append(returnedItems.size()).append("\n\n");
 
-        report.append("Recent Activity:\n");
-        allItems.stream().limit(5).forEach(item ->
-                report.append("• ").append(item.getItemName()).append(" (").append(item.getStatus()).append(")\n")
-        );
+        report.append("User Breakdown:\n");
+        long adminCount = allUsers.stream().filter(User::isAdmin).count();
+        long userCount = allUsers.stream().filter(user -> !user.isAdmin()).count();
+        report.append("• Administrators: ").append(adminCount).append("\n");
+        report.append("• Regular Users: ").append(userCount).append("\n\n");
+
+        report.append("Item Breakdown:\n");
+        long lostCount = allItems.stream().filter(item -> "lost".equals(item.getType())).count();
+        long foundCount = allItems.stream().filter(item -> "found".equals(item.getType())).count();
+        long verifiedCount = allItems.stream().filter(LostFoundItem::isVerified).count();
+        report.append("• Lost Items: ").append(lostCount).append("\n");
+        report.append("• Found Items: ").append(foundCount).append("\n");
+        report.append("• Verified Items: ").append(verifiedCount).append("\n\n");
+
+        report.append("Recent Activity (Last 5 items):\n");
+        allItems.stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .limit(5)
+                .forEach(item ->
+                        report.append("• ").append(item.getItemName())
+                                .append(" (").append(item.getType())
+                                .append(") - ").append(item.getStatus())
+                                .append(" - ").append(item.isVerified() ? "Verified" : "Pending")
+                                .append("\n")
+                );
 
         TextArea textArea = new TextArea(report.toString());
         textArea.setEditable(false);
-        textArea.setPrefSize(500, 400);
+        textArea.setPrefSize(500, 500);
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("System Report");
@@ -340,7 +413,7 @@ public class AdminDashboardController {
 
         // Open login window
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/Login.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/login.fxml"));
             Parent root = loader.load();
             Stage loginStage = new Stage();
             loginStage.setTitle("Lost and Found System - Login");
@@ -348,23 +421,6 @@ public class AdminDashboardController {
             loginStage.show();
         } catch (IOException e) {
             showError("Error", "Cannot open login window: " + e.getMessage());
-        }
-    }
-
-    // NEW: Navigation to Verification Dashboard
-    @FXML
-    private void handleVerificationDashboard() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml"));
-            Parent root = loader.load();
-
-            Stage stage = new Stage();
-            stage.setTitle("Admin Verification Dashboard");
-            stage.setScene(new Scene(root, 1200, 800));
-            stage.show();
-
-        } catch (IOException e) {
-            showError("Error", "Cannot open verification dashboard: " + e.getMessage());
         }
     }
 

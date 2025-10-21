@@ -1,5 +1,6 @@
 package com.unmadgamer.lostandfoundfinal.controller;
 
+import com.unmadgamer.lostandfoundfinal.model.User;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -156,16 +157,31 @@ public class LoginController {
             Stage currentStage = (Stage) usernameTextField.getScene().getWindow();
             currentStage.close();
 
-            // Open dashboard
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/dashboard.fxml"));
+            User currentUser = userService.getCurrentUser();
+            String fxmlFile;
+            String title;
+
+            // Check if user is admin and redirect accordingly
+            if (currentUser != null && currentUser.isAdmin()) {
+                fxmlFile = "/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml";
+                title = "Admin Dashboard - Lost and Found System";
+                System.out.println("🚀 Redirecting admin to admin dashboard: " + currentUser.getUsername());
+            } else {
+                fxmlFile = "/com/unmadgamer/lostandfoundfinal/dashboard.fxml";
+                title = "Dashboard - Lost and Found System";
+                System.out.println("🎉 Redirecting user to regular dashboard: " +
+                        (currentUser != null ? currentUser.getUsername() : "Unknown"));
+            }
+
+            // Open appropriate dashboard
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
             Parent root = loader.load();
 
             Stage dashboardStage = new Stage();
-            dashboardStage.setTitle("Dashboard - Lost and Found System");
+            dashboardStage.setTitle(title);
             dashboardStage.setScene(new Scene(root, 600, 450));
             dashboardStage.show();
 
-            System.out.println("🎉 Dashboard opened for user: " + userService.getCurrentUser().getUsername());
         } catch (IOException e) {
             showError("Cannot open dashboard: " + e.getMessage());
             e.printStackTrace();

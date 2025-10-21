@@ -1,6 +1,6 @@
 package com.unmadgamer.lostandfoundfinal.controller;
 
-import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
+import com.unmadgamer.lostandfoundfinal.model.FoundItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.fxml.FXML;
@@ -33,6 +33,9 @@ public class FoundFormController {
     @FXML
     private TextField contactInfoField;
 
+    @FXML
+    private TextField storageLocationField;
+
     private ItemService itemService;
     private UserService userService;
 
@@ -49,56 +52,74 @@ public class FoundFormController {
 
         System.out.println("📝 FoundFormController initialized for user: " +
                 (userService.getCurrentUser() != null ? userService.getCurrentUser().getUsername() : "Unknown"));
+
+        // Debug: Check if services are properly initialized
+        System.out.println("🔧 ItemService instance: " + (itemService != null ? "OK" : "NULL"));
+        System.out.println("🔧 UserService instance: " + (userService != null ? "OK" : "NULL"));
     }
 
     @FXML
     private void handleSubmit() {
+        System.out.println("🔄 Submit button clicked in Found Form");
+
         if (validateInput()) {
             String currentUser = userService.getCurrentUser().getUsername();
 
             // Format the date properly
             String formattedDate = foundDatePicker.getValue().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-            // Create the found item
-            LostFoundItem foundItem = new LostFoundItem(
-                    itemNameField.getText().trim(),
-                    categoryField.getText().trim(),
-                    descriptionField.getText().trim(),
-                    locationField.getText().trim(),
-                    "found", // status
-                    currentUser // reportedBy
-            );
-
-            // Set additional fields
+            // Create the found item using the FoundItem subclass
+            FoundItem foundItem = new FoundItem();
+            foundItem.setItemName(itemNameField.getText().trim());
+            foundItem.setCategory(categoryField.getText().trim());
+            foundItem.setDescription(descriptionField.getText().trim());
+            foundItem.setLocation(locationField.getText().trim());
+            foundItem.setReportedBy(currentUser);
             foundItem.setDate(formattedDate);
             foundItem.setContactInfo(contactInfoField.getText().trim());
+            foundItem.setFoundDate(formattedDate);
+            foundItem.setStorageLocation(storageLocationField.getText().trim());
 
-            System.out.println("➕ Adding found item: " + itemNameField.getText());
-            System.out.println("📋 Item details - Category: " + categoryField.getText() +
-                    ", Location: " + locationField.getText() +
-                    ", Verified: " + foundItem.isVerified());
+            // Set initial status
+            foundItem.setStatus("pending");
+            foundItem.setVerificationStatus("pending");
 
-            itemService.addItem(foundItem);
+            System.out.println("➕ Attempting to add found item: " + foundItem.getItemName());
+            System.out.println("📋 Item details - Category: " + foundItem.getCategory() +
+                    ", Location: " + foundItem.getLocation() +
+                    ", Storage: " + foundItem.getStorageLocation() +
+                    ", Reported by: " + foundItem.getReportedBy());
 
-            showSuccess("Found item reported successfully!\n\n" +
-                    "Item: " + itemNameField.getText() + "\n" +
-                    "Category: " + categoryField.getText() + "\n" +
-                    "Location: " + locationField.getText() + "\n\n" +
-                    "✅ The item has been submitted for admin verification.\n" +
-                    "You can track the verification status in your items list.");
+            if (itemService.addFoundItem(foundItem)) {
+                System.out.println("✅ Found item added successfully!");
+                showSuccess("Found item reported successfully!\n\n" +
+                        "Item: " + foundItem.getItemName() + "\n" +
+                        "Category: " + foundItem.getCategory() + "\n" +
+                        "Location Found: " + foundItem.getLocation() + "\n" +
+                        "Storage: " + foundItem.getStorageLocation() + "\n\n" +
+                        "✅ The item has been submitted for admin verification.\n" +
+                        "You can track the verification status in your items list.");
 
-            clearForm();
-            closeWindow();
+                clearForm();
+                closeWindow();
+            } else {
+                System.err.println("❌ Failed to add found item to service");
+                showError("Failed to save found item. Please try again.");
+            }
+        } else {
+            System.out.println("❌ Form validation failed");
         }
     }
 
     @FXML
     private void handleBackToDashboard() {
+        System.out.println("🔙 Back to dashboard clicked");
         closeWindow();
     }
 
     @FXML
     private void handleClearForm() {
+        System.out.println("🗑️ Clear form clicked");
         clearForm();
         showAlert("Form Cleared", "All form fields have been cleared.", Alert.AlertType.INFORMATION);
     }
@@ -139,9 +160,16 @@ public class FoundFormController {
 
         // Location validation
         if (locationField.getText().trim().isEmpty()) {
-            errors.append("• Location is required\n");
+            errors.append("• Location where item was found is required\n");
         } else if (locationField.getText().trim().length() < 3) {
             errors.append("• Location must be at least 3 characters\n");
+        }
+
+        // Storage location validation
+        if (storageLocationField.getText().trim().isEmpty()) {
+            errors.append("• Current storage location is required\n");
+        } else if (storageLocationField.getText().trim().length() < 3) {
+            errors.append("• Storage location must be at least 3 characters\n");
         }
 
         // Date validation
@@ -163,6 +191,7 @@ public class FoundFormController {
             return false;
         }
 
+        System.out.println("✅ Form validation passed");
         return true;
     }
 
@@ -183,6 +212,7 @@ public class FoundFormController {
         categoryField.clear();
         descriptionField.clear();
         locationField.clear();
+        storageLocationField.clear();
         foundDatePicker.setValue(LocalDate.now());
 
         // Reset contact info to user's email

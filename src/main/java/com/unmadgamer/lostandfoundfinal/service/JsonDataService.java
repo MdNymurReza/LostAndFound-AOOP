@@ -1,12 +1,15 @@
 package com.unmadgamer.lostandfoundfinal.service;
 
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
+import com.unmadgamer.lostandfoundfinal.model.LostItem;
+import com.unmadgamer.lostandfoundfinal.model.FoundItem;
 import com.unmadgamer.lostandfoundfinal.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +36,9 @@ public class JsonDataService {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
         objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+
+        // Register subtypes for polymorphic deserialization
+        objectMapper.registerSubtypes(LostItem.class, FoundItem.class);
 
         // Initialize data directory
         initializeDataDirectory();
@@ -145,6 +151,259 @@ public class JsonDataService {
         }
     }
 
+    // LostFoundItem methods with polymorphic support
+    public List<LostFoundItem> loadItems() {
+        try {
+            Path filePath = Paths.get(ITEMS_FILE);
+
+            if (!Files.exists(filePath)) {
+                System.out.println("📁 Items file doesn't exist, creating new one with empty list");
+                saveItems(new ArrayList<>());
+                return new ArrayList<>();
+            }
+
+            if (Files.size(filePath) == 0) {
+                System.out.println("📄 Items file is empty, returning empty list");
+                return new ArrayList<>();
+            }
+
+            String fileContent = Files.readString(filePath);
+            if (fileContent.trim().isEmpty()) {
+                System.out.println("📄 Items file contains only whitespace, returning empty list");
+                return new ArrayList<>();
+            }
+
+            if (!isValidJson(fileContent)) {
+                System.err.println("❌ Invalid JSON syntax detected, creating backup and resetting");
+                createBackup(filePath, "items_corrupted_backup.json");
+                List<LostFoundItem> recoveredItems = attemptItemDataRecovery(fileContent);
+                System.out.println("🔧 Recovered " + recoveredItems.size() + " items from corrupted file");
+                saveItems(recoveredItems);
+                return recoveredItems;
+            }
+
+            // Read JSON as tree to handle polymorphism
+            JsonNode rootNode = objectMapper.readTree(fileContent);
+            List<LostFoundItem> items = new ArrayList<>();
+
+            if (rootNode.isArray()) {
+                for (JsonNode node : rootNode) {
+                    LostFoundItem item = deserializeItem(node);
+                    if (item != null) {
+                        items.add(item);
+                    }
+                }
+            }
+
+            System.out.println("✅ Successfully loaded " + items.size() + " items from JSON");
+
+            // Debug: Show item types
+            long lostCount = items.stream().filter(item -> item instanceof LostItem).count();
+            long foundCount = items.stream().filter(item -> item instanceof FoundItem).count();
+            System.out.println("📊 Item breakdown: " + lostCount + " lost items, " + foundCount + " found items");
+
+            return items;
+
+        } catch (IOException e) {
+            System.err.println("❌ Error loading items from JSON: " + e.getMessage());
+
+            try {
+                Path filePath = Paths.get(ITEMS_FILE);
+                if (Files.exists(filePath)) {
+                    createBackup(filePath, "items_error_backup.json");
+                }
+            } catch (Exception backupError) {
+                System.err.println("Failed to create backup: " + backupError.getMessage());
+            }
+
+            saveItems(new ArrayList<>());
+            return new ArrayList<>();
+        }
+    }
+
+    // Helper method to deserialize items with proper type handling
+    private LostFoundItem deserializeItem(JsonNode node) {
+        try {
+            // Check the type field to determine which subclass to use
+            if (node.has("type")) {
+                String type = node.get("type").asText();
+                switch (type) {
+                    case "lost":
+                        return objectMapper.treeToValue(node, LostItem.class);
+                    case "found":
+                        return objectMapper.treeToValue(node, FoundItem.class);
+                    default:
+                        System.err.println("❌ Unknown item type: " + type);
+                        return objectMapper.treeToValue(node, LostFoundItem.class);
+                }
+            } else {
+                // Fallback: try to determine type based on available fields
+                if (node.has("lostDate") || node.has("reward")) {
+                    return objectMapper.treeToValue(node, LostItem.class);
+                } else if (node.has("foundDate") || node.has("storageLocation")) {
+                    return objectMapper.treeToValue(node, FoundItem.class);
+                } else {
+                    // Default to base class if type cannot be determined
+                    return objectMapper.treeToValue(node, LostFoundItem.class);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error deserializing item: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public boolean saveItems(List<LostFoundItem> items) {
+        try {
+            Path filePath = Paths.get(ITEMS_FILE);
+
+            System.out.println("💾 Saving " + items.size() + " items to JSON:");
+            for (LostFoundItem item : items) {
+                String type = item instanceof LostItem ? "Lost" : "Found";
+                System.out.println("   📝 " + type + " | " + item.getItemName() + " | " +
+                        item.getStatus() + " | " + item.getReportedBy() + " | Verified: " + item.isVerified());
+            }
+
+            if (Files.exists(filePath)) {
+                createBackup(filePath, "items_pre_save_backup.json");
+            }
+
+            Path tempFile = Paths.get(ITEMS_FILE + ".tmp");
+            objectMapper.writeValue(tempFile.toFile(), items);
+
+            Files.move(tempFile, filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            System.out.println("✅ Successfully saved " + items.size() + " items to JSON");
+
+            // Verify and log item types after save
+            verifySavedItems(filePath);
+
+            return verifySave(filePath, items.size());
+        } catch (Exception e) {
+            System.err.println("❌ Error saving items to JSON: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Verify saved items by reading them back
+    private void verifySavedItems(Path filePath) {
+        try {
+            if (Files.exists(filePath) && Files.size(filePath) > 0) {
+                List<LostFoundItem> savedItems = loadItems();
+                long lostCount = savedItems.stream().filter(item -> item instanceof LostItem).count();
+                long foundCount = savedItems.stream().filter(item -> item instanceof FoundItem).count();
+                System.out.println("🔍 Save verification: " + lostCount + " lost, " + foundCount + " found items persisted correctly");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Save verification failed: " + e.getMessage());
+        }
+    }
+
+    // Attempt to recover item data from corrupted JSON
+    private List<LostFoundItem> attemptItemDataRecovery(String corruptedJson) {
+        List<LostFoundItem> recoveredItems = new ArrayList<>();
+
+        try {
+            // Simple string parsing to extract item data
+            String[] lines = corruptedJson.split("\n");
+            LostFoundItem currentItem = null;
+            String currentType = null;
+
+            for (String line : lines) {
+                String trimmed = line.trim();
+
+                if (trimmed.contains("\"itemName\"")) {
+                    // Save previous item if exists
+                    if (currentItem != null) {
+                        recoveredItems.add(currentItem);
+                    }
+                    // Reset for new item
+                    currentItem = null;
+                    currentType = null;
+                } else if (trimmed.contains("\"type\"") && currentItem == null) {
+                    currentType = extractValue(trimmed);
+                    if ("lost".equals(currentType)) {
+                        currentItem = new LostItem();
+                    } else if ("found".equals(currentType)) {
+                        currentItem = new FoundItem();
+                    } else {
+                        currentItem = new LostItem(); // Default to LostItem
+                    }
+                } else if (currentItem == null && (trimmed.contains("\"lostDate\"") || trimmed.contains("\"reward\""))) {
+                    // Determine type from fields
+                    currentItem = new LostItem();
+                    currentType = "lost";
+                } else if (currentItem == null && (trimmed.contains("\"foundDate\"") || trimmed.contains("\"storageLocation\""))) {
+                    currentItem = new FoundItem();
+                    currentType = "found";
+                } else if (currentItem == null && trimmed.contains("{")) {
+                    // Start of new object without type info, default to LostItem
+                    currentItem = new LostItem();
+                    currentType = "lost";
+                }
+
+                // Populate item fields
+                if (currentItem != null) {
+                    if (trimmed.contains("\"itemName\"")) {
+                        currentItem.setItemName(extractValue(trimmed));
+                    } else if (trimmed.contains("\"category\"")) {
+                        currentItem.setCategory(extractValue(trimmed));
+                    } else if (trimmed.contains("\"description\"")) {
+                        currentItem.setDescription(extractValue(trimmed));
+                    } else if (trimmed.contains("\"location\"")) {
+                        currentItem.setLocation(extractValue(trimmed));
+                    } else if (trimmed.contains("\"date\"")) {
+                        currentItem.setDate(extractValue(trimmed));
+                    } else if (trimmed.contains("\"status\"")) {
+                        currentItem.setStatus(extractValue(trimmed));
+                    } else if (trimmed.contains("\"reportedBy\"")) {
+                        currentItem.setReportedBy(extractValue(trimmed));
+                    } else if (trimmed.contains("\"verificationStatus\"")) {
+                        currentItem.setVerificationStatus(extractValue(trimmed));
+                    } else if (trimmed.contains("\"verifiedBy\"")) {
+                        currentItem.setVerifiedBy(extractValue(trimmed));
+                    } else if (trimmed.contains("\"verificationDate\"")) {
+                        currentItem.setVerificationDate(extractValue(trimmed));
+                    } else if (currentItem instanceof LostItem) {
+                        LostItem lostItem = (LostItem) currentItem;
+                        if (trimmed.contains("\"lostDate\"")) {
+                            lostItem.setLostDate(extractValue(trimmed));
+                        } else if (trimmed.contains("\"reward\"")) {
+                            lostItem.setReward(extractValue(trimmed));
+                        } else if (trimmed.contains("\"claimedBy\"")) {
+                            lostItem.setClaimedBy(extractValue(trimmed));
+                        } else if (trimmed.contains("\"claimStatus\"")) {
+                            lostItem.setClaimStatus(extractValue(trimmed));
+                        }
+                    } else if (currentItem instanceof FoundItem) {
+                        FoundItem foundItem = (FoundItem) currentItem;
+                        if (trimmed.contains("\"foundDate\"")) {
+                            foundItem.setFoundDate(extractValue(trimmed));
+                        } else if (trimmed.contains("\"storageLocation\"")) {
+                            foundItem.setStorageLocation(extractValue(trimmed));
+                        } else if (trimmed.contains("\"claimedBy\"")) {
+                            foundItem.setClaimedBy(extractValue(trimmed));
+                        } else if (trimmed.contains("\"claimStatus\"")) {
+                            foundItem.setClaimStatus(extractValue(trimmed));
+                        }
+                    }
+                }
+            }
+
+            // Add the last item
+            if (currentItem != null) {
+                recoveredItems.add(currentItem);
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Could not recover item data from corrupted JSON: " + e.getMessage());
+        }
+
+        System.out.println("🔧 Total recovered items: " + recoveredItems.size());
+        return recoveredItems;
+    }
+
     // Attempt to recover user data from corrupted JSON
     private List<User> attemptUserDataRecovery(String corruptedJson) {
         List<User> recoveredUsers = new ArrayList<>();
@@ -215,141 +474,6 @@ public class JsonDataService {
             // Ignore extraction errors
         }
         return null;
-    }
-
-    // LostFoundItem methods
-    public List<LostFoundItem> loadItems() {
-        try {
-            Path filePath = Paths.get(ITEMS_FILE);
-
-            if (!Files.exists(filePath)) {
-                System.out.println("📁 Items file doesn't exist, creating new one with empty list");
-                saveItems(new ArrayList<>());
-                return new ArrayList<>();
-            }
-
-            if (Files.size(filePath) == 0) {
-                System.out.println("📄 Items file is empty, returning empty list");
-                return new ArrayList<>();
-            }
-
-            String fileContent = Files.readString(filePath);
-            if (fileContent.trim().isEmpty()) {
-                System.out.println("📄 Items file contains only whitespace, returning empty list");
-                return new ArrayList<>();
-            }
-
-            if (!isValidJson(fileContent)) {
-                System.err.println("❌ Invalid JSON syntax detected, creating backup and resetting");
-                createBackup(filePath, "items_corrupted_backup.json");
-                List<LostFoundItem> recoveredItems = attemptItemDataRecovery(fileContent);
-                System.out.println("🔧 Recovered " + recoveredItems.size() + " items from corrupted file");
-                saveItems(recoveredItems);
-                return recoveredItems;
-            }
-
-            List<LostFoundItem> items = objectMapper.readValue(
-                    filePath.toFile(),
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, LostFoundItem.class)
-            );
-
-            System.out.println("✅ Successfully loaded " + items.size() + " items from JSON");
-            return items;
-
-        } catch (IOException e) {
-            System.err.println("❌ Error loading items from JSON: " + e.getMessage());
-
-            try {
-                Path filePath = Paths.get(ITEMS_FILE);
-                if (Files.exists(filePath)) {
-                    createBackup(filePath, "items_error_backup.json");
-                }
-            } catch (Exception backupError) {
-                System.err.println("Failed to create backup: " + backupError.getMessage());
-            }
-
-            saveItems(new ArrayList<>());
-            return new ArrayList<>();
-        }
-    }
-
-    public boolean saveItems(List<LostFoundItem> items) {
-        try {
-            Path filePath = Paths.get(ITEMS_FILE);
-
-            System.out.println("💾 Saving " + items.size() + " items to JSON:");
-            for (LostFoundItem item : items) {
-                System.out.println("   📝 " + item.getItemName() + " | " + item.getStatus() + " | " + item.getReportedBy());
-            }
-
-            if (Files.exists(filePath)) {
-                createBackup(filePath, "items_pre_save_backup.json");
-            }
-
-            Path tempFile = Paths.get(ITEMS_FILE + ".tmp");
-            objectMapper.writeValue(tempFile.toFile(), items);
-
-            Files.move(tempFile, filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            System.out.println("✅ Successfully saved " + items.size() + " items to JSON");
-            return verifySave(filePath, items.size());
-        } catch (Exception e) {
-            System.err.println("❌ Error saving items to JSON: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // Attempt to recover item data from corrupted JSON
-    private List<LostFoundItem> attemptItemDataRecovery(String corruptedJson) {
-        List<LostFoundItem> recoveredItems = new ArrayList<>();
-
-        try {
-            // Simple string parsing to extract item data
-            String[] lines = corruptedJson.split("\n");
-            LostFoundItem currentItem = null;
-
-            for (String line : lines) {
-                String trimmed = line.trim();
-
-                if (trimmed.contains("\"itemName\"")) {
-                    // Save previous item if exists
-                    if (currentItem != null) {
-                        recoveredItems.add(currentItem);
-                    }
-                    // Start new item
-                    currentItem = new LostFoundItem();
-                    currentItem.setItemName(extractValue(trimmed));
-                } else if (trimmed.contains("\"category\"") && currentItem != null) {
-                    currentItem.setCategory(extractValue(trimmed));
-                } else if (trimmed.contains("\"description\"") && currentItem != null) {
-                    currentItem.setDescription(extractValue(trimmed));
-                } else if (trimmed.contains("\"location\"") && currentItem != null) {
-                    currentItem.setLocation(extractValue(trimmed));
-                } else if (trimmed.contains("\"date\"") && currentItem != null) {
-                    currentItem.setDate(extractValue(trimmed));
-                } else if (trimmed.contains("\"status\"") && currentItem != null) {
-                    currentItem.setStatus(extractValue(trimmed));
-                } else if (trimmed.contains("\"reportedBy\"") && currentItem != null) {
-                    currentItem.setReportedBy(extractValue(trimmed));
-                } else if (trimmed.contains("\"verified\"") && currentItem != null) {
-                    currentItem.setVerified(Boolean.parseBoolean(extractValue(trimmed)));
-                } else if (trimmed.contains("\"verifiedBy\"") && currentItem != null) {
-                    currentItem.setVerifiedBy(extractValue(trimmed));
-                }
-            }
-
-            // Add the last item
-            if (currentItem != null) {
-                recoveredItems.add(currentItem);
-            }
-
-        } catch (Exception e) {
-            System.err.println("❌ Could not recover item data from corrupted JSON: " + e.getMessage());
-        }
-
-        System.out.println("🔧 Total recovered items: " + recoveredItems.size());
-        return recoveredItems;
     }
 
     // Helper method to validate JSON syntax
@@ -429,6 +553,14 @@ public class JsonDataService {
                     System.out.println("Items file content (first 500 chars): " +
                             content.substring(0, Math.min(content.length(), 500)));
                     System.out.println("JSON valid: " + isValidJson(content));
+
+                    // Load and analyze items
+                    List<LostFoundItem> items = loadItems();
+                    System.out.println("Loaded items count: " + items.size());
+                    for (LostFoundItem item : items) {
+                        String type = item instanceof LostItem ? "Lost" : "Found";
+                        System.out.println("  - " + type + ": " + item.getItemName() + " (" + item.getStatus() + ")");
+                    }
                 }
             }
 

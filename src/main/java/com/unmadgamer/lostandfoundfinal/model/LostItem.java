@@ -1,21 +1,21 @@
 package com.unmadgamer.lostandfoundfinal.model;
 
-public class FoundItem extends LostFoundItem {
-    private String foundDate;
-    private String storageLocation;
+public class LostItem extends LostFoundItem {
+    private String lostDate;
+    private String reward;
     private String claimedBy;
     private String claimStatus; // "pending", "approved", "rejected"
 
-    public FoundItem() {
+    public LostItem() {
         super();
         this.claimStatus = "pending";
     }
 
-    public String getFoundDate() { return foundDate; }
-    public void setFoundDate(String foundDate) { this.foundDate = foundDate; }
+    public String getLostDate() { return lostDate; }
+    public void setLostDate(String lostDate) { this.lostDate = lostDate; }
 
-    public String getStorageLocation() { return storageLocation; }
-    public void setStorageLocation(String storageLocation) { this.storageLocation = storageLocation; }
+    public String getReward() { return reward; }
+    public void setReward(String reward) { this.reward = reward; }
 
     public String getClaimedBy() { return claimedBy; }
     public void setClaimedBy(String claimedBy) { this.claimedBy = claimedBy; }
@@ -25,7 +25,7 @@ public class FoundItem extends LostFoundItem {
 
     @Override
     public String getType() {
-        return "found";
+        return "lost";
     }
 
     // Claim methods
@@ -36,7 +36,7 @@ public class FoundItem extends LostFoundItem {
 
     public void approveClaim(String adminUsername) {
         this.claimStatus = "approved";
-        this.status = "returned";
+        this.status = "claimed";
         this.verifiedBy = adminUsername;
     }
 
