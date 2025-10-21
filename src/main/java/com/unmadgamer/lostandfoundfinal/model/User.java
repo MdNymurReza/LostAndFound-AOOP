@@ -3,6 +3,7 @@ package com.unmadgamer.lostandfoundfinal.model;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.Random;
 
 public class User {
     private String username;
@@ -15,10 +16,18 @@ public class User {
     private String lastLogin;
     private boolean active;
 
+    // NEW: Reward system fields
+    private int rewardPoints;
+    private int itemsReturned;
+    private String rewardTier;
+
     // Required no-arg constructor for Jackson
     public User() {
         this.createdAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         this.active = true;
+        this.rewardPoints = 0;
+        this.itemsReturned = 0;
+        this.rewardTier = "Bronze";
     }
 
     public User(String username, String password, String email, String firstName, String lastName, String role) {
@@ -58,6 +67,19 @@ public class User {
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+
+    // NEW: Reward system getters and setters
+    public int getRewardPoints() { return rewardPoints; }
+    public void setRewardPoints(int rewardPoints) {
+        this.rewardPoints = rewardPoints;
+        updateRewardTier();
+    }
+
+    public int getItemsReturned() { return itemsReturned; }
+    public void setItemsReturned(int itemsReturned) { this.itemsReturned = itemsReturned; }
+
+    public String getRewardTier() { return rewardTier; }
+    public void setRewardTier(String rewardTier) { this.rewardTier = rewardTier; }
 
     // Helper Methods
     public String getFullName() {
@@ -113,6 +135,112 @@ public class User {
         this.lastLogin = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 
+    // NEW: Reward System Methods
+    public void addRewardPoints(int points) {
+        this.rewardPoints += points;
+        updateRewardTier();
+        System.out.println("🎁 Added " + points + " reward points to user: " + username + " | Total: " + rewardPoints);
+    }
+
+    public void incrementItemsReturned() {
+        this.itemsReturned++;
+        System.out.println("📦 Incremented returned items count for user: " + username + " | Total: " + itemsReturned);
+    }
+
+    private void updateRewardTier() {
+        if (rewardPoints >= 1000) {
+            rewardTier = "Platinum";
+        } else if (rewardPoints >= 500) {
+            rewardTier = "Gold";
+        } else if (rewardPoints >= 200) {
+            rewardTier = "Silver";
+        } else {
+            rewardTier = "Bronze";
+        }
+    }
+
+    public int calculateRandomReward() {
+        // Base points + random bonus
+        Random random = new Random();
+        int basePoints = 50;
+        int randomBonus = random.nextInt(101); // 0-100 random bonus
+
+        // Bonus for being an active user
+        int activityBonus = (itemsReturned > 5) ? 20 : 0;
+
+        return basePoints + randomBonus + activityBonus;
+    }
+
+    public int calculateRewardWithBonus(boolean hadReward) {
+        int baseReward = calculateRandomReward();
+
+        // Additional bonus if the lost item had a reward offer
+        if (hadReward) {
+            baseReward += 25; // Bonus for offering reward
+            System.out.println("💰 Reward bonus applied: +25 points for offering reward");
+        }
+
+        return baseReward;
+    }
+
+    public String getTierBenefits() {
+        switch (rewardTier) {
+            case "Platinum":
+                return "• Priority support\n• Exclusive features\n• Maximum rewards (2x points)\n• Instant verification\n• Dedicated account manager";
+            case "Gold":
+                return "• Faster verification\n• Bonus points (1.5x)\n• Premium features\n• Early access to new features";
+            case "Silver":
+                return "• Quick responses\n• Extra points (1.25x)\n• Enhanced visibility\n• Priority listing";
+            default:
+                return "• Standard benefits\n• Basic rewards\n• Community support\n• Regular verification";
+        }
+    }
+
+    public double getTierMultiplier() {
+        switch (rewardTier) {
+            case "Platinum": return 2.0;
+            case "Gold": return 1.5;
+            case "Silver": return 1.25;
+            default: return 1.0;
+        }
+    }
+
+    public String getNextTierInfo() {
+        int pointsNeeded = 0;
+        String nextTier = "";
+
+        switch (rewardTier) {
+            case "Bronze":
+                pointsNeeded = 200 - rewardPoints;
+                nextTier = "Silver";
+                break;
+            case "Silver":
+                pointsNeeded = 500 - rewardPoints;
+                nextTier = "Gold";
+                break;
+            case "Gold":
+                pointsNeeded = 1000 - rewardPoints;
+                nextTier = "Platinum";
+                break;
+            case "Platinum":
+                return "You've reached the highest tier! 🏆";
+            default:
+                pointsNeeded = 200 - rewardPoints;
+                nextTier = "Silver";
+        }
+
+        return pointsNeeded > 0 ?
+                String.format("Need %d more points to reach %s tier", pointsNeeded, nextTier) :
+                "Congratulations! You've reached " + nextTier + " tier!";
+    }
+
+    public String getRewardSummary() {
+        return String.format(
+                "🏆 %s Tier | 📊 %d Points | 📦 %d Items Returned",
+                rewardTier, rewardPoints, itemsReturned
+        );
+    }
+
     // Validation Methods
     public boolean isValid() {
         return username != null && !username.trim().isEmpty() &&
@@ -152,6 +280,18 @@ public class User {
         return "User";
     }
 
+    // NEW: Enhanced display with rewards
+    public String getDisplayNameWithTier() {
+        return getFullName() + " 🏆 " + rewardTier;
+    }
+
+    public String getProfileSummary() {
+        return String.format(
+                "👤 %s %s\n📧 %s\n💎 %s Tier\n🏆 %d Points\n📦 %d Items Returned",
+                firstName, lastName, email, rewardTier, rewardPoints, itemsReturned
+        );
+    }
+
     // Utility Methods
     @Override
     public boolean equals(Object o) {
@@ -169,7 +309,9 @@ public class User {
 
     @Override
     public String toString() {
-        return String.format("User{username='%s', email='%s', role='%s', active=%s, created=%s}",
-                username, email, role, active, createdAt);
+        return String.format(
+                "User{username='%s', email='%s', role='%s', active=%s, rewardTier='%s', rewardPoints=%d, itemsReturned=%d, created=%s}",
+                username, email, role, active, rewardTier, rewardPoints, itemsReturned, createdAt
+        );
     }
 }

@@ -7,7 +7,7 @@
 
 <VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.unmadgamer.lostandfoundfinal.controller.AdminVerificationDashboardController"
-      spacing="20" style="-fx-padding: 25; -fx-background-color: #f8f9fa;" prefHeight="1000" prefWidth="1490">
+      spacing="20" style="-fx-padding: 25; -fx-background-color: #f8f9fa;" prefHeight="800" prefWidth="1200">
 
     <!-- Header -->
     <HBox alignment="CENTER_LEFT" spacing="15">
@@ -56,6 +56,13 @@
             <Label text="Verification Rate" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
             <Label fx:id="verificationRateLabel" text="100%" style="-fx-text-fill: #9b59b6; -fx-font-size: 28; -fx-font-weight: bold;"/>
         </VBox>
+
+        <!-- Pending Claims -->
+        <VBox spacing="5" style="-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2); -fx-padding: 20; -fx-alignment: center;">
+            <Label text="📝" style="-fx-font-size: 24;"/>
+            <Label text="Pending Claims" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
+            <Label fx:id="pendingClaimsLabel" text="0" style="-fx-text-fill: #9b59b6; -fx-font-size: 28; -fx-font-weight: bold;"/>
+        </VBox>
     </HBox>
 
     <!-- Search and Filter Section -->
@@ -81,7 +88,7 @@
     <!-- Main Content Area -->
     <HBox spacing="20" VBox.vgrow="ALWAYS">
         <!-- Pending Verification Section -->
-        <VBox spacing="10" prefWidth="600" HBox.hgrow="ALWAYS">
+        <VBox spacing="10" prefWidth="400" HBox.hgrow="ALWAYS">
             <Label text="⏳ Items Pending Verification" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #e67e22;"/>
             <TableView fx:id="pendingTable" VBox.vgrow="ALWAYS">
                 <columns>
@@ -113,13 +120,31 @@
                 </columnResizePolicy>
             </TableView>
         </VBox>
+
+        <!-- Pending Claims Section -->
+        <VBox spacing="10" prefWidth="400">
+            <Label text="📝 Pending Claims" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #9b59b6;"/>
+            <TableView fx:id="pendingClaimsTable" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colClaimItemName" text="Item Name" prefWidth="120"/>
+                    <TableColumn fx:id="colClaimItemType" text="Type" prefWidth="80"/>
+                    <TableColumn fx:id="colClaimClaimant" text="Claimed By" prefWidth="100"/>
+                    <TableColumn fx:id="colClaimDate" text="Date" prefWidth="80"/>
+                    <TableColumn fx:id="colClaimActions" text="Actions" prefWidth="120"/>
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                </columnResizePolicy>
+            </TableView>
+        </VBox>
     </HBox>
 
     <!-- Instructions -->
     <VBox spacing="5" style="-fx-padding: 15; -fx-background-color: #e8f4f8; -fx-border-color: #3498db; -fx-border-radius: 8;">
         <Label text="🎯 Quick Actions Guide:" style="-fx-font-weight: bold; -fx-text-fill: #2980b9;"/>
-        <Label text="• Click 'Verify' button or right-click for quick verification" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
+        <Label text="• Click 'Verify' or 'Reject' buttons to manage item verification" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
         <Label text="• Use 'Bulk Verify' to verify multiple selected items at once" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
+        <Label text="• Click 'Approve' or 'Reject' to manage pending claims" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
         <Label text="• Filter items by status, category, or date for easier management" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
         <Label text="• Export reports for verification tracking and analytics" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
     </VBox>

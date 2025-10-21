@@ -195,6 +195,15 @@ public class ItemService {
         return false;
     }
 
+    // NEW METHOD: Get returned items for a specific user
+    public List<LostFoundItem> getReturnedItemsForUser(String username) {
+        return items.stream()
+                .filter(item -> item != null &&
+                        ("returned".equals(item.getStatus()) || "claimed".equals(item.getStatus())) &&
+                        username.equals(item.getReportedBy()))
+                .collect(Collectors.toList());
+    }
+
     // Get items for verification
     public List<LostFoundItem> getPendingVerificationItems() {
         return items.stream()

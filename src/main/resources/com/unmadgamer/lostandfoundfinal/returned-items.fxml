@@ -16,6 +16,8 @@
          <Label fx:id="subtitleLabel" text="Items that have been successfully returned to owners" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
       </VBox>
       <Region HBox.hgrow="ALWAYS"/>
+      <Button text="My Rewards" onAction="#handleViewMyRewards"
+              style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
       <Button text="Refresh" onAction="#handleRefresh"
               style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
       <Button text="Export Report" onAction="#handleExportReport"
@@ -48,9 +50,10 @@
       <VBox fx:id="itemsContainer" spacing="15" style="-fx-padding: 10;"/>
    </ScrollPane>
 
-   <!-- Success Message -->
-   <VBox spacing="5" style="-fx-padding: 10; -fx-background-color: #d4edda; -fx-border-color: #c3e6cb; -fx-border-radius: 5;">
-      <Label text="✅ Success Stories:" style="-fx-font-weight: bold; -fx-text-fill: #155724;"/>
-      <Label text="These items have been successfully returned to their rightful owners!" style="-fx-text-fill: #155724; -fx-font-size: 12;"/>
+   <!-- Success and Rewards Message -->
+   <VBox spacing="5" style="-fx-padding: 10; -fx-background-color: #fff3cd; -fx-border-color: #ffeaa7; -fx-border-radius: 5;">
+      <Label text="🎉 Success Stories &amp; Rewards:" style="-fx-font-weight: bold; -fx-text-fill: #856404;"/>
+      <Label text="These items have been successfully returned! Users earn reward points for returned items." style="-fx-text-fill: #856404; -fx-font-size: 12;"/>
+      <Label text="💎 Reward Tiers: Bronze (0-199) • Silver (200-499) • Gold (500-999) • Platinum (1000+)" style="-fx-text-fill: #856404; -fx-font-size: 11; -fx-font-weight: bold;"/>
    </VBox>
 </VBox>

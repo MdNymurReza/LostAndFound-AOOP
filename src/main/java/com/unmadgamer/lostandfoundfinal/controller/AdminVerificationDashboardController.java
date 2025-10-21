@@ -1,6 +1,8 @@
 package com.unmadgamer.lostandfoundfinal.controller;
 
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
+import com.unmadgamer.lostandfoundfinal.model.LostItem;
+import com.unmadgamer.lostandfoundfinal.model.FoundItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.collections.FXCollections;
@@ -11,8 +13,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AdminVerificationDashboardController {
 
@@ -21,6 +23,7 @@ public class AdminVerificationDashboardController {
     @FXML private Label verifiedTodayLabel;
     @FXML private Label totalVerifiedLabel;
     @FXML private Label verificationRateLabel;
+    @FXML private Label pendingClaimsLabel;
 
     @FXML private TextField searchField;
     @FXML private ComboBox<String> statusFilter;
@@ -41,13 +44,24 @@ public class AdminVerificationDashboardController {
     @FXML private TableColumn<LostFoundItem, String> colVerifiedBy;
     @FXML private TableColumn<LostFoundItem, String> colVerifiedActions;
 
+    // NEW: Claims Management Table
+    @FXML private TableView<LostFoundItem> pendingClaimsTable;
+    @FXML private TableColumn<LostFoundItem, String> colClaimItemName;
+    @FXML private TableColumn<LostFoundItem, String> colClaimItemType;
+    @FXML private TableColumn<LostFoundItem, String> colClaimClaimant;
+    @FXML private TableColumn<LostFoundItem, String> colClaimDate;
+    @FXML private TableColumn<LostFoundItem, String> colClaimActions;
+
     private ItemService itemService;
     private UserService userService;
     private ObservableList<LostFoundItem> pendingItems;
     private ObservableList<LostFoundItem> verifiedItems;
+    private ObservableList<LostFoundItem> pendingClaimItems;
 
     @FXML
     public void initialize() {
+        System.out.println("🔄 Initializing Admin Verification Dashboard...");
+
         itemService = ItemService.getInstance();
         userService = UserService.getInstance();
 
@@ -58,10 +72,14 @@ public class AdminVerificationDashboardController {
 
         adminWelcomeLabel.setText("Admin Verification Dashboard - Welcome " +
                 userService.getCurrentUser().getUsername() + "!");
+
+        System.out.println("✅ Admin Verification Dashboard initialized successfully");
     }
 
     private void initializeTables() {
-        // Pending table setup
+        System.out.println("🔄 Setting up tables...");
+
+        // Pending verification table setup
         colPendingItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         colPendingCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
         colPendingDate.setCellValueFactory(new PropertyValueFactory<>("date"));
@@ -74,8 +92,8 @@ public class AdminVerificationDashboardController {
             private final HBox buttons = new HBox(5, verifyBtn, rejectBtn);
 
             {
-                verifyBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
-                rejectBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+                verifyBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 11;");
+                rejectBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 11;");
 
                 verifyBtn.setOnAction(event -> {
                     LostFoundItem item = getTableView().getItems().get(getIndex());
@@ -108,7 +126,7 @@ public class AdminVerificationDashboardController {
         colVerifiedActions.setCellFactory(param -> new TableCell<>() {
             private final Button viewBtn = new Button("View");
             {
-                viewBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
+                viewBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 11;");
                 viewBtn.setOnAction(event -> {
                     LostFoundItem item = getTableView().getItems().get(getIndex());
                     viewItemDetails(item);
@@ -126,11 +144,70 @@ public class AdminVerificationDashboardController {
             }
         });
 
+        // Pending Claims table setup
+        colClaimItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
+        colClaimItemType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        colClaimDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+
+        colClaimClaimant.setCellFactory(param -> new TableCell<LostFoundItem, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    LostFoundItem lostFoundItem = getTableView().getItems().get(getIndex());
+                    if (lostFoundItem instanceof LostItem) {
+                        setText(((LostItem) lostFoundItem).getClaimedBy());
+                    } else if (lostFoundItem instanceof FoundItem) {
+                        setText(((FoundItem) lostFoundItem).getClaimedBy());
+                    } else {
+                        setText("Unknown");
+                    }
+                }
+            }
+        });
+
+        colClaimActions.setCellFactory(param -> new TableCell<>() {
+            private final Button approveBtn = new Button("Approve");
+            private final Button rejectBtn = new Button("Reject");
+            private final HBox buttons = new HBox(5, approveBtn, rejectBtn);
+
+            {
+                approveBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 11;");
+                rejectBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 11;");
+
+                approveBtn.setOnAction(event -> {
+                    LostFoundItem item = getTableView().getItems().get(getIndex());
+                    approveClaim(item);
+                });
+
+                rejectBtn.setOnAction(event -> {
+                    LostFoundItem item = getTableView().getItems().get(getIndex());
+                    rejectClaim(item);
+                });
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(buttons);
+                }
+            }
+        });
+
         pendingItems = FXCollections.observableArrayList();
         verifiedItems = FXCollections.observableArrayList();
+        pendingClaimItems = FXCollections.observableArrayList();
 
         pendingTable.setItems(pendingItems);
         recentVerifiedTable.setItems(verifiedItems);
+        pendingClaimsTable.setItems(pendingClaimItems);
+
+        System.out.println("✅ Tables setup completed");
     }
 
     private void setupFilters() {
@@ -146,15 +223,33 @@ public class AdminVerificationDashboardController {
     }
 
     private void loadData() {
-        // Load pending verification items
-        List<LostFoundItem> pendingList = itemService.getPendingVerificationItems();
-        pendingItems.setAll(pendingList);
+        System.out.println("🔄 Loading dashboard data...");
 
-        // Load recently verified items (last 7 days)
-        List<LostFoundItem> verifiedList = itemService.getVerifiedItems();
-        verifiedItems.setAll(verifiedList.stream()
-                .limit(10) // Show only recent 10 items
-                .collect(java.util.stream.Collectors.toList()));
+        try {
+            // Load pending verification items
+            List<LostFoundItem> pendingList = itemService.getPendingVerificationItems();
+            pendingItems.setAll(pendingList);
+
+            // Load recently verified items (last 10 items)
+            List<LostFoundItem> verifiedList = itemService.getVerifiedItems();
+            verifiedItems.setAll(verifiedList.stream()
+                    .limit(10)
+                    .collect(Collectors.toList()));
+
+            // Load pending claim items
+            List<LostFoundItem> claimList = itemService.getPendingClaimItems();
+            pendingClaimItems.setAll(claimList);
+
+            System.out.println("📊 Admin Dashboard Data Loaded:");
+            System.out.println("   ⏳ Pending Verification: " + pendingList.size());
+            System.out.println("   ✅ Verified Items: " + verifiedList.size());
+            System.out.println("   📝 Pending Claims: " + claimList.size());
+
+        } catch (Exception e) {
+            System.err.println("❌ Error loading dashboard data: " + e.getMessage());
+            e.printStackTrace();
+            showAlert("Data Load Error", "Failed to load dashboard data: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
     }
 
     private void verifyItem(LostFoundItem item) {
@@ -179,19 +274,72 @@ public class AdminVerificationDashboardController {
         }
     }
 
+    // Claim approval methods
+    private void approveClaim(LostFoundItem item) {
+        String adminUsername = userService.getCurrentUser().getUsername();
+        if (itemService.approveClaim(item.getId(), adminUsername)) {
+            showAlert("Success", "Claim approved successfully! Item marked as returned.", Alert.AlertType.INFORMATION);
+            loadData();
+            updateStatistics();
+        } else {
+            showAlert("Error", "Failed to approve claim!", Alert.AlertType.ERROR);
+        }
+    }
+
+    private void rejectClaim(LostFoundItem item) {
+        String adminUsername = userService.getCurrentUser().getUsername();
+        if (itemService.rejectClaim(item.getId(), adminUsername)) {
+            showAlert("Success", "Claim rejected! Item is available for claim again.", Alert.AlertType.INFORMATION);
+            loadData();
+            updateStatistics();
+        } else {
+            showAlert("Error", "Failed to reject claim!", Alert.AlertType.ERROR);
+        }
+    }
+
     private void viewItemDetails(LostFoundItem item) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Item Details");
         alert.setHeaderText(item.getItemName());
-        alert.setContentText(
-                "Category: " + item.getCategory() + "\n" +
-                        "Description: " + item.getDescription() + "\n" +
-                        "Location: " + item.getLocation() + "\n" +
-                        "Reported by: " + item.getReportedBy() + "\n" +
-                        "Status: " + item.getStatus() + "\n" +
-                        "Verified by: " + item.getVerifiedBy() + "\n" +
-                        "Verification Date: " + item.getVerificationDate()
-        );
+
+        StringBuilder details = new StringBuilder();
+        details.append("Category: ").append(item.getCategory()).append("\n");
+        details.append("Description: ").append(item.getDescription()).append("\n");
+        details.append("Location: ").append(item.getLocation()).append("\n");
+        details.append("Date: ").append(item.getDate()).append("\n");
+        details.append("Reported by: ").append(item.getReportedBy()).append("\n");
+        details.append("Status: ").append(item.getStatus()).append("\n");
+        details.append("Verification: ").append(item.getVerificationStatus()).append("\n");
+
+        if (item.isVerified()) {
+            details.append("Verified by: ").append(item.getVerifiedBy()).append("\n");
+            details.append("Verification Date: ").append(item.getVerificationDate()).append("\n");
+        }
+
+        // Add claim information if applicable
+        if (item instanceof LostItem) {
+            LostItem lostItem = (LostItem) item;
+            if (lostItem.getClaimedBy() != null) {
+                details.append("\n=== CLAIM INFORMATION ===\n");
+                details.append("Claimed by: ").append(lostItem.getClaimedBy()).append("\n");
+                details.append("Claim Status: ").append(lostItem.getClaimStatus()).append("\n");
+                if (lostItem.getClaimStatus().equals("approved")) {
+                    details.append("✅ This item has been returned to its owner\n");
+                }
+            }
+        } else if (item instanceof FoundItem) {
+            FoundItem foundItem = (FoundItem) item;
+            if (foundItem.getClaimedBy() != null) {
+                details.append("\n=== CLAIM INFORMATION ===\n");
+                details.append("Claimed by: ").append(foundItem.getClaimedBy()).append("\n");
+                details.append("Claim Status: ").append(foundItem.getClaimStatus()).append("\n");
+                if (foundItem.getClaimStatus().equals("approved")) {
+                    details.append("✅ This item has been returned to its owner\n");
+                }
+            }
+        }
+
+        alert.setContentText(details.toString());
         alert.showAndWait();
     }
 
@@ -200,6 +348,10 @@ public class AdminVerificationDashboardController {
         verifiedTodayLabel.setText(String.valueOf(itemService.getVerifiedTodayCount()));
         totalVerifiedLabel.setText(String.valueOf(itemService.getTotalVerifiedCount()));
         verificationRateLabel.setText(String.format("%.1f%%", itemService.getVerificationRate()));
+
+        // Update pending claims count
+        long pendingClaimsCount = itemService.getPendingClaimItems().size();
+        pendingClaimsLabel.setText(String.valueOf(pendingClaimsCount));
     }
 
     @FXML
