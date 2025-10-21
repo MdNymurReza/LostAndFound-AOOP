@@ -8,6 +8,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -56,45 +57,50 @@ public class DashBoardController {
     @FXML
     private Label score3Label;
 
+    @FXML
+    private Button adminVerificationBtn; // NEW: Admin verification button
+
     private UserService userService;
     private User currentUser;
+    private ItemService itemService;
 
     @FXML
     public void initialize() {
         userService = UserService.getInstance();
+        itemService = ItemService.getInstance();
         currentUser = userService.getCurrentUser();
 
         if (currentUser != null) {
+            System.out.println("🎯 Dashboard initialized for user: " + currentUser.getUsername());
             loadUserData();
             loadStatistics();
             loadLeaderboard();
-        }
+            setupAdminFeatures(); // NEW: Setup admin features
 
-        // Debug FXML files
-        debugFxmlFiles();
+            // Debug data state
+            debugDataState();
+        } else {
+            System.err.println("❌ No current user found in dashboard");
+        }
     }
 
-    private void debugFxmlFiles() {
-        System.out.println("=== FXML FILES DEBUG ===");
-        String[] fxmlFiles = {
-                "/com/unmadgamer/lostandfoundfinal/lost-items.fxml",
-                "/com/unmadgamer/lostandfoundfinal/found-items.fxml",
-                "/com/unmadgamer/lostandfoundfinal/returned-items.fxml"
-        };
-
-        for (String fxmlFile : fxmlFiles) {
-            try {
-                java.net.URL url = getClass().getResource(fxmlFile);
-                if (url == null) {
-                    System.err.println("❌ FXML file not found: " + fxmlFile);
-                } else {
-                    System.out.println("✅ FXML file found: " + fxmlFile);
-                }
-            } catch (Exception e) {
-                System.err.println("Error checking " + fxmlFile + ": " + e.getMessage());
-            }
+    // NEW: Setup admin-specific features
+    private void setupAdminFeatures() {
+        if (currentUser != null && currentUser.isAdmin()) {
+            adminVerificationBtn.setVisible(true);
+            adminVerificationBtn.setManaged(true);
+            System.out.println("👑 Admin features enabled for: " + currentUser.getUsername());
+        } else {
+            adminVerificationBtn.setVisible(false);
+            adminVerificationBtn.setManaged(false);
         }
-        System.out.println("=== END DEBUG ===");
+    }
+
+    private void debugDataState() {
+        System.out.println("=== DASHBOARD DATA STATE ===");
+        itemService.debugCurrentData();
+        userService.debugUsers();
+        System.out.println("=== END DATA STATE ===");
     }
 
     private void loadUserData() {
@@ -106,14 +112,22 @@ public class DashBoardController {
             Image profileImage = new Image(getClass().getResourceAsStream("/com/unmadgamer/lostandfoundfinal/images/profile.png"));
             profileImageView.setImage(profileImage);
         } catch (Exception e) {
-            System.out.println("Profile image not found, using default");
+            System.out.println("ℹ️  Profile image not found, using default");
             // You can set a default image here
         }
     }
 
+    // NEW: Public method to refresh statistics (can be called from other controllers)
+    public void refreshStatistics() {
+        System.out.println("🔄 Refreshing dashboard statistics...");
+        loadStatistics();
+    }
+
     private void loadStatistics() {
-        ItemService itemService = ItemService.getInstance();
         String currentUsername = userService.getCurrentUser().getUsername();
+
+        // Force refresh data before calculating statistics
+        itemService.refreshData();
 
         int lostCount = itemService.getLostItemsCount(currentUsername);
         int foundCount = itemService.getFoundItemsCount(currentUsername);
@@ -126,7 +140,13 @@ public class DashBoardController {
         returnedItemsLabel.setText(String.valueOf(returnedCount));
         rewardPointsLabel.setText(String.valueOf(rewardPoints));
 
-        System.out.println("Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount + ", Returned: " + returnedCount);
+        System.out.println("📊 Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount + ", Returned: " + returnedCount);
+
+        // NEW: Show admin stats if user is admin
+        if (currentUser.isAdmin()) {
+            int pendingVerification = itemService.getPendingVerificationCount();
+            System.out.println("👑 Admin stats - Pending verification: " + pendingVerification);
+        }
     }
 
     private void loadLeaderboard() {
@@ -145,13 +165,13 @@ public class DashBoardController {
     @FXML
     private void handleLostForm() {
         System.out.println("Clicked: Lost Form");
-        openWindow("/com/unmadgamer/lostandfoundfinal/lost-form.fxml", "Report Lost Item");
+        openWindowWithCallback("/com/unmadgamer/lostandfoundfinal/lost-form.fxml", "Report Lost Item");
     }
 
     @FXML
     private void handleFoundForm() {
         System.out.println("Clicked: Found Form");
-        openWindow("/com/unmadgamer/lostandfoundfinal/found-form.fxml", "Report Found Item");
+        openWindowWithCallback("/com/unmadgamer/lostandfoundfinal/found-form.fxml", "Report Found Item");
     }
 
     @FXML
@@ -172,10 +192,65 @@ public class DashBoardController {
         openWindow("/com/unmadgamer/lostandfoundfinal/returned-items.fxml", "Returned Items");
     }
 
+    // NEW: Admin Verification Panel
+    @FXML
+    private void handleAdminVerification() {
+        System.out.println("Clicked: Admin Verification");
+        if (currentUser != null && currentUser.isAdmin()) {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/admin-verification.fxml"));
+                Parent root = loader.load();
+
+                Stage stage = new Stage();
+                stage.setTitle("Admin Verification Panel - " + currentUser.getFirstName());
+                stage.setScene(new Scene(root, 900, 700));
+                stage.show();
+
+                System.out.println("✅ Admin verification panel opened");
+            } catch (IOException e) {
+                System.err.println("❌ Error opening admin verification panel: " + e.getMessage());
+                showError("Cannot open Admin Panel: " + e.getMessage());
+            }
+        } else {
+            showAlert("Access Denied", "You need administrator privileges to access the verification panel.");
+        }
+    }
+
     @FXML
     private void handleEditProfile() {
         System.out.println("Clicked: Edit Profile");
         showAlert("Edit Profile", "Edit profile functionality will be implemented soon!");
+    }
+
+    @FXML
+    private void handleRefreshDashboard() {
+        System.out.println("Clicked: Refresh Dashboard");
+        refreshStatistics();
+        showAlert("Refreshed", "Dashboard statistics have been updated!");
+    }
+
+    @FXML
+    private void handleDataDebug() {
+        System.out.println("Clicked: Data Debug");
+        itemService.debugCurrentData();
+        showAlert("Data Debug", "Check console for data debug information");
+    }
+
+    @FXML
+    private void handleDataReset() {
+        System.out.println("Clicked: Data Reset");
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Reset Data");
+        alert.setHeaderText("Reset All Data");
+        alert.setContentText("This will delete ALL items and users (except default admin). Are you sure?");
+
+        alert.showAndWait().ifPresent(response -> {
+            if (response == javafx.scene.control.ButtonType.OK) {
+                itemService.resetAllData();
+                showAlert("Data Reset", "All data has been reset successfully");
+                refreshStatistics(); // Refresh dashboard
+            }
+        });
     }
 
     @FXML
@@ -203,9 +278,10 @@ public class DashBoardController {
 
     // ===== HELPER METHODS =====
 
-    private void openWindow(String fxmlPath, String title) {
+    // NEW: Open window with callback for refresh
+    private void openWindowWithCallback(String fxmlPath, String title) {
         try {
-            System.out.println("Attempting to open: " + fxmlPath);
+            System.out.println("🚪 Attempting to open: " + fxmlPath);
 
             java.net.URL url = getClass().getResource(fxmlPath);
             if (url == null) {
@@ -214,7 +290,41 @@ public class DashBoardController {
                 return;
             }
 
-            System.out.println("✅ FXML URL: " + url);
+            FXMLLoader loader = new FXMLLoader(url);
+            Parent root = loader.load();
+
+            // Set up a listener for when the window closes
+            Stage stage = new Stage();
+            stage.setTitle(title);
+            stage.setScene(new Scene(root));
+
+            // When the form window closes, refresh the dashboard
+            stage.setOnHidden(event -> {
+                System.out.println("🔄 Form window closed, refreshing dashboard...");
+                refreshStatistics();
+            });
+
+            stage.show();
+
+            System.out.println("✅ Successfully opened: " + title);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error opening " + title + ": " + e.getMessage());
+            e.printStackTrace();
+            showError("Cannot open " + title + ": " + e.getMessage());
+        }
+    }
+
+    private void openWindow(String fxmlPath, String title) {
+        try {
+            System.out.println("🚪 Attempting to open: " + fxmlPath);
+
+            java.net.URL url = getClass().getResource(fxmlPath);
+            if (url == null) {
+                System.err.println("❌ FXML file not found: " + fxmlPath);
+                showError("Cannot open " + title + ": File not found at " + fxmlPath);
+                return;
+            }
 
             FXMLLoader loader = new FXMLLoader(url);
             Parent root = loader.load();

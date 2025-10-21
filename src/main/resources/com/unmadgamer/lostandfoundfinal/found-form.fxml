@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.unmadgamer.lostandfoundfinal.controller.FoundFormController"
+      spacing="20" style="-fx-padding: 30; -fx-background-color: #f8f9fa;">
+
+   <Label text="Report Found Item" style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+   <VBox spacing="15">
+      <!-- Item Name -->
+      <VBox spacing="5">
+         <Label text="Item Name *" style="-fx-font-weight: bold;"/>
+         <TextField fx:id="itemNameField" promptText="Enter item name (e.g., iPhone, Wallet, Keys)"
+                    style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
+      </VBox>
+
+      <!-- Category -->
+      <VBox spacing="5">
+         <Label text="Category *" style="-fx-font-weight: bold;"/>
+         <TextField fx:id="categoryField" promptText="Enter category (e.g., Electronics, Personal, Documents)"
+                    style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
+      </VBox>
+
+      <!-- Description -->
+      <VBox spacing="5">
+         <Label text="Description *" style="-fx-font-weight: bold;"/>
+         <TextArea fx:id="descriptionField" promptText="Provide detailed description of the found item..."
+                   prefRowCount="3" wrapText="true"
+                   style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
+      </VBox>
+
+      <!-- Location -->
+      <VBox spacing="5">
+         <Label text="Location *" style="-fx-font-weight: bold;"/>
+         <TextField fx:id="locationField" promptText="Where did you find it? (e.g., Main Library, Cafeteria)"
+                    style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
+      </VBox>
+
+      <!-- Date -->
+      <VBox spacing="5">
+         <Label text="Found Date *" style="-fx-font-weight: bold;"/>
+         <DatePicker fx:id="foundDatePicker"
+                     style="-fx-background-radius: 8; -fx-border-radius: 8;"/>
+      </VBox>
+
+      <!-- Contact Info -->
+      <VBox spacing="5">
+         <Label text="Contact Information *" style="-fx-font-weight: bold;"/>
+         <TextField fx:id="contactInfoField" promptText="Your email or phone number for contact"
+                    style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 10;"/>
+      </VBox>
+   </VBox>
+
+   <!-- Action Buttons -->
+   <HBox spacing="15" alignment="CENTER">
+      <Button text="Submit Report" onAction="#handleSubmit"
+              style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12 30; -fx-background-radius: 8;"/>
+      <Button text="Clear Form" onAction="#handleClearForm"
+              style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12 30; -fx-background-radius: 8;"/>
+      <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
+              style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12 30; -fx-background-radius: 8;"/>
+   </HBox>
+
+   <!-- Instructions -->
+   <VBox spacing="5" style="-fx-padding: 15; -fx-background-color: #d1ecf1; -fx-border-color: #bee5eb; -fx-border-radius: 8;">
+      <Label text="📝 Instructions:" style="-fx-font-weight: bold; -fx-text-fill: #0c5460;"/>
+      <Label text="• Fill all required fields marked with *" style="-fx-text-fill: #0c5460; -fx-font-size: 12;"/>
+      <Label text="• Provide detailed description for better identification" style="-fx-text-fill: #0c5460; -fx-font-size: 12;"/>
+      <Label text="• Admin will verify the item before marking as returned" style="-fx-text-fill: #0c5460; -fx-font-size: 12;"/>
+   </VBox>
+</VBox>

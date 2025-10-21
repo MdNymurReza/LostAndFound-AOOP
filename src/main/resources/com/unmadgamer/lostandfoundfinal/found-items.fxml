@@ -1,55 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
-<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Font?>
 
-<?import javafx.scene.control.cell.PropertyValueFactory?>
 <VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.unmadgamer.lostandfoundfinal.controller.FoundItemsController"
-      spacing="20" alignment="TOP_CENTER" style="-fx-padding: 20;">
+      spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;">
 
-   <Label text="Found Items" style="-fx-font-size: 24; -fx-font-weight: bold;"/>
+   <!-- Header -->
+   <HBox alignment="CENTER_LEFT" spacing="15">
+      <VBox spacing="5">
+         <Label text="Found Items" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+         <Label fx:id="userNameLabel" text="User" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
+      </VBox>
+      <Region HBox.hgrow="ALWAYS"/>
+      <Button text="Refresh" onAction="#handleRefresh"
+              style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+      <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
+              style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+   </HBox>
 
-   <VBox spacing="15" style="-fx-padding: 20;">
-      <Label text="All Found Items Reported by Users" style="-fx-font-size: 16;"/>
+   <!-- Search and Filter -->
+   <HBox spacing="15" alignment="CENTER_LEFT">
+      <TextField fx:id="searchField" promptText="Search found items..."
+                 style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8 15;"
+                 prefWidth="250"/>
+      <ComboBox fx:id="filterCombo" promptText="Filter by verification"
+                style="-fx-background-radius: 8; -fx-border-radius: 8;"
+                prefWidth="180"/>
+      <Region HBox.hgrow="ALWAYS"/>
+      <Button text="Mark as Returned" onAction="#handleMarkAsReturned"
+              style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+   </HBox>
 
-      <TableView fx:id="itemsTable" prefHeight="300.0" prefWidth="500.0">
-         <columns>
-            <TableColumn text="Item Name" prefWidth="120">
-               <cellValueFactory>
-                  <PropertyValueFactory property="itemName" />
-               </cellValueFactory>
-            </TableColumn>
-            <TableColumn text="Category" prefWidth="100">
-               <cellValueFactory>
-                  <PropertyValueFactory property="category" />
-               </cellValueFactory>
-            </TableColumn>
-            <TableColumn text="Date Found" prefWidth="100">
-               <cellValueFactory>
-                  <PropertyValueFactory property="date" />
-               </cellValueFactory>
-            </TableColumn>
-            <TableColumn text="Location" prefWidth="120">
-               <cellValueFactory>
-                  <PropertyValueFactory property="location" />
-               </cellValueFactory>
-            </TableColumn>
-            <TableColumn text="Reported By" prefWidth="120">
-               <cellValueFactory>
-                  <PropertyValueFactory property="reportedBy" />
-               </cellValueFactory>
-            </TableColumn>
-         </columns>
-      </TableView>
+   <!-- Table -->
+   <TableView fx:id="itemsTable" VBox.vgrow="ALWAYS">
+      <columns>
+         <TableColumn fx:id="colItemName" text="Item Name" prefWidth="150"/>
+         <TableColumn fx:id="colCategory" text="Category" prefWidth="120"/>
+         <TableColumn fx:id="colDate" text="Found Date" prefWidth="120"/>
+         <TableColumn fx:id="colLocation" text="Location" prefWidth="150"/>
+         <TableColumn fx:id="colReportedBy" text="Reported By" prefWidth="120"/>
+         <TableColumn fx:id="colVerification" text="Verification" prefWidth="120"/>
+      </columns>
+      <columnResizePolicy>
+         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+      </columnResizePolicy>
+   </TableView>
 
-      <HBox spacing="20" alignment="CENTER">
-         <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
-                 style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-pref-width: 150;"/>
-         <Button text="Refresh" onAction="#handleRefresh"
-                 style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-pref-width: 100;"/>
-      </HBox>
+   <!-- Instructions -->
+   <VBox spacing="5" style="-fx-padding: 10; -fx-background-color: #e8f4f8; -fx-border-color: #3498db; -fx-border-radius: 5;">
+      <Label text="💡 Tips:" style="-fx-font-weight: bold; -fx-text-fill: #2980b9;"/>
+      <Label text="• Select an item and use 'Mark as Returned' when item is returned to owner" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
+      <Label text="• Admins can right-click items to verify them" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
+      <Label text="• Use search and filter to find specific items" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
    </VBox>
 </VBox>

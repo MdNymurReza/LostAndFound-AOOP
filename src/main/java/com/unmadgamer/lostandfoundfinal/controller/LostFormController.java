@@ -4,21 +4,16 @@ import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import java.io.IOException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class LostFormController {
-
-    @FXML
-    private TextField numberField;
 
     @FXML
     private TextField itemNameField;
@@ -27,10 +22,16 @@ public class LostFormController {
     private TextField categoryField;
 
     @FXML
+    private TextArea descriptionField;
+
+    @FXML
+    private TextField locationField;
+
+    @FXML
     private DatePicker lostDatePicker;
 
     @FXML
-    private TextField lostPlaceField;
+    private TextField contactInfoField;
 
     private ItemService itemService;
     private UserService userService;
@@ -40,87 +41,162 @@ public class LostFormController {
         itemService = ItemService.getInstance();
         userService = UserService.getInstance();
         lostDatePicker.setValue(LocalDate.now());
+
+        // Set default contact info to current user's email
+        if (userService.getCurrentUser() != null) {
+            contactInfoField.setText(userService.getCurrentUser().getEmail());
+        }
+
+        System.out.println("📝 LostFormController initialized for user: " +
+                (userService.getCurrentUser() != null ? userService.getCurrentUser().getUsername() : "Unknown"));
     }
 
     @FXML
     private void handleSubmit() {
         if (validateInput()) {
             String currentUser = userService.getCurrentUser().getUsername();
-            String userEmail = userService.getCurrentUser().getEmail();
 
-            // In the handleSubmit method, change the item creation:
+            // Format the date properly
+            String formattedDate = lostDatePicker.getValue().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            // Create the lost item
             LostFoundItem lostItem = new LostFoundItem(
-                    itemNameField.getText(),
-                    categoryField.getText(),
-                    "Lost item - " + itemNameField.getText(),
-                    lostDatePicker.getValue(), // This will automatically convert to String
-                    lostPlaceField.getText(),
-                    "lost",
-                    currentUser,
-                    userEmail
+                    itemNameField.getText().trim(),
+                    categoryField.getText().trim(),
+                    descriptionField.getText().trim(),
+                    locationField.getText().trim(),
+                    "lost", // status
+                    currentUser // reportedBy
             );
+
+            // Set additional fields
+            lostItem.setDate(formattedDate);
+            lostItem.setContactInfo(contactInfoField.getText().trim());
+
+            System.out.println("➕ Adding lost item: " + itemNameField.getText());
+            System.out.println("📋 Item details - Category: " + categoryField.getText() +
+                    ", Location: " + locationField.getText() +
+                    ", Verified: " + lostItem.isVerified());
 
             itemService.addItem(lostItem);
 
-            showSuccess("Lost item reported successfully!");
+            showSuccess("Lost item reported successfully!\n\n" +
+                    "Item: " + itemNameField.getText() + "\n" +
+                    "Category: " + categoryField.getText() + "\n" +
+                    "Location: " + locationField.getText() + "\n\n" +
+                    "🔍 Your item has been added to the lost items list.\n" +
+                    "You will be notified if someone finds it!");
+
             clearForm();
-            returnToDashboard();
+            closeWindow();
         }
     }
 
     @FXML
     private void handleBackToDashboard() {
-        returnToDashboard();
+        closeWindow();
     }
 
-    private void returnToDashboard() {
+    @FXML
+    private void handleClearForm() {
+        clearForm();
+        showAlert("Form Cleared", "All form fields have been cleared.", Alert.AlertType.INFORMATION);
+    }
+
+    private void closeWindow() {
         try {
             Stage currentStage = (Stage) itemNameField.getScene().getWindow();
             currentStage.close();
-
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/dashboard.fxml"));
-            Parent root = loader.load();
-            Stage dashboardStage = new Stage();
-            dashboardStage.setTitle("Dashboard - Lost and Found System");
-            dashboardStage.setScene(new Scene(root, 600, 450));
-            dashboardStage.show();
-        } catch (IOException e) {
-            showError("Cannot return to dashboard: " + e.getMessage());
+            System.out.println("✅ Lost form window closed");
+        } catch (Exception e) {
+            System.err.println("❌ Error closing window: " + e.getMessage());
         }
     }
 
     private boolean validateInput() {
+        StringBuilder errors = new StringBuilder();
+
+        // Item Name validation
         if (itemNameField.getText().trim().isEmpty()) {
-            showError("Item name is required");
-            return false;
+            errors.append("• Item name is required\n");
+        } else if (itemNameField.getText().trim().length() < 2) {
+            errors.append("• Item name must be at least 2 characters\n");
         }
+
+        // Category validation
         if (categoryField.getText().trim().isEmpty()) {
-            showError("Category is required");
-            return false;
+            errors.append("• Category is required\n");
+        } else if (categoryField.getText().trim().length() < 2) {
+            errors.append("• Category must be at least 2 characters\n");
         }
+
+        // Description validation
+        if (descriptionField.getText().trim().isEmpty()) {
+            errors.append("• Description is required\n");
+        } else if (descriptionField.getText().trim().length() < 10) {
+            errors.append("• Description must be at least 10 characters\n");
+        }
+
+        // Location validation
+        if (locationField.getText().trim().isEmpty()) {
+            errors.append("• Location is required\n");
+        } else if (locationField.getText().trim().length() < 3) {
+            errors.append("• Location must be at least 3 characters\n");
+        }
+
+        // Date validation
         if (lostDatePicker.getValue() == null) {
-            showError("Lost date is required");
+            errors.append("• Lost date is required\n");
+        } else if (lostDatePicker.getValue().isAfter(LocalDate.now())) {
+            errors.append("• Lost date cannot be in the future\n");
+        }
+
+        // Contact info validation
+        if (contactInfoField.getText().trim().isEmpty()) {
+            errors.append("• Contact information is required\n");
+        } else if (!isValidContactInfo(contactInfoField.getText().trim())) {
+            errors.append("• Please provide valid contact information (email or phone)\n");
+        }
+
+        if (errors.length() > 0) {
+            showError("Please fix the following errors:\n\n" + errors.toString());
             return false;
         }
-        if (lostPlaceField.getText().trim().isEmpty()) {
-            showError("Lost place is required");
-            return false;
-        }
+
         return true;
     }
 
+    private boolean isValidContactInfo(String contactInfo) {
+        // Basic validation for email or phone
+        if (contactInfo.contains("@")) {
+            // Email validation
+            return contactInfo.matches("^[A-Za-z0-9+_.-]+@(.+)$");
+        } else {
+            // Phone validation - at least 10 digits
+            String digitsOnly = contactInfo.replaceAll("\\D", "");
+            return digitsOnly.length() >= 10;
+        }
+    }
+
     private void clearForm() {
-        numberField.clear();
         itemNameField.clear();
         categoryField.clear();
+        descriptionField.clear();
+        locationField.clear();
         lostDatePicker.setValue(LocalDate.now());
-        lostPlaceField.clear();
+
+        // Reset contact info to user's email
+        if (userService.getCurrentUser() != null) {
+            contactInfoField.setText(userService.getCurrentUser().getEmail());
+        } else {
+            contactInfoField.clear();
+        }
     }
 
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Validation Error");
-        alert.setHeaderText(null);
+        alert.setHeaderText("Invalid Input");
         alert.setContentText(message);
         alert.showAndWait();
     }
@@ -128,6 +204,14 @@ public class LostFormController {
     private void showSuccess(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Success");
+        alert.setHeaderText("Lost Item Reported Successfully");
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

@@ -2,6 +2,7 @@ package com.unmadgamer.lostandfoundfinal.service;
 
 import com.unmadgamer.lostandfoundfinal.model.User;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,13 +12,19 @@ public class UserService {
     private List<User> users;
     private User currentUser;
 
-    public UserService() {
+    private UserService() {
         this.jsonDataService = new JsonDataService();
         loadUsers();
-        initializeDefaultUsers();
+
+        // Create default admin user if no users exist
+        if (users.isEmpty()) {
+            createDefaultAdmin();
+        }
+
+        System.out.println("✅ UserService initialized with " + users.size() + " users");
     }
 
-    public static UserService getInstance() {
+    public static synchronized UserService getInstance() {
         if (instance == null) {
             instance = new UserService();
         }
@@ -26,125 +33,88 @@ public class UserService {
 
     private void loadUsers() {
         users = jsonDataService.loadUsers();
-        System.out.println("Total users in memory after loading: " + users.size());
     }
 
-    private void initializeDefaultUsers() {
-        // Only add default users if no users exist
-        if (users.isEmpty()) {
-            System.out.println("Initializing default users...");
-            users.add(new User("admin", "admin123", "admin@lostfound.com", "System", "Administrator", "admin"));
-            users.add(new User("user", "user123", "user@lostfound.com", "Regular", "User", "user"));
-            saveUsersToJson();
-        } else {
-            System.out.println("Users already exist, skipping default initialization");
-            System.out.println("Current users:");
-            for (User user : users) {
-                System.out.println(" - " + user.getUsername() + " | " + user.getEmail());
-            }
-        }
+    private void saveUsers() {
+        jsonDataService.saveUsers(users);
     }
 
-    private void saveUsersToJson() {
-        System.out.println("Saving users to JSON...");
-        boolean success = jsonDataService.saveUsers(users);
-        if (success) {
-            System.out.println("✓ Users saved successfully to JSON");
-            // Verify the JSON file
-            jsonDataService.verifyJsonFile();
-            // Reload to verify data consistency
-            List<User> reloadedUsers = jsonDataService.loadUsers();
-            System.out.println("Verification - reloaded " + reloadedUsers.size() + " users from JSON");
-        } else {
-            System.out.println("✗ FAILED to save users to JSON");
+    private void createDefaultAdmin() {
+        User adminUser = new User(
+                "admin",
+                "admin123",
+                "admin@lostfound.com",
+                "System",
+                "Administrator",
+                "admin"
+        );
+        users.add(adminUser);
+        saveUsers();
+        System.out.println("👤 Created default admin user");
+    }
+
+    public boolean registerUser(String username, String password, String email, String firstName, String lastName) {
+        // Check if username already exists
+        if (getUserByUsername(username).isPresent()) {
+            return false;
         }
+
+        User newUser = new User(username, password, email, firstName, lastName, "user");
+        users.add(newUser);
+        saveUsers();
+
+        System.out.println("✅ New user registered: " + username);
+        return true;
     }
 
     public boolean login(String username, String password) {
-        System.out.println("=== LOGIN ATTEMPT ===");
-        System.out.println("Username: " + username + ", Password: " + password);
+        Optional<User> userOpt = getUserByUsername(username);
 
-        // Always reload from JSON to get latest data
-        loadUsers();
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (user.getPassword().equals(password) && user.isActive()) {
+                currentUser = user;
+                user.updateLastLogin();
+                saveUsers();
 
-        System.out.println("Available users (" + users.size() + "):");
-        for (User user : users) {
-            System.out.println(" - " + user.getUsername() + " : " + user.getPassword() + " | " + user.getEmail());
+                System.out.println("✅ User logged in: " + username + " (" + user.getRole() + ")");
+                return true;
+            }
         }
 
-        Optional<User> user = users.stream()
-                .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
-                .findFirst();
-
-        if (user.isPresent()) {
-            currentUser = user.get();
-            System.out.println("✓ LOGIN SUCCESSFUL for user: " + username);
-            return true;
-        } else {
-            System.out.println("✗ LOGIN FAILED for user: " + username);
-            return false;
-        }
-    }
-
-    public boolean register(String username, String password, String email, String firstName, String lastName) {
-        System.out.println("=== REGISTRATION ===");
-        System.out.println("Registering: " + username + ", " + email + ", " + firstName + " " + lastName);
-
-        // Reload to get current state
-        loadUsers();
-
-        // Check if username exists
-        if (users.stream().anyMatch(u -> u.getUsername().equals(username))) {
-            System.out.println("✗ Registration failed - Username already exists: " + username);
-            return false;
-        }
-
-        // Check if email exists
-        if (users.stream().anyMatch(u -> u.getEmail().equalsIgnoreCase(email))) {
-            System.out.println("✗ Registration failed - Email already exists: " + email);
-            return false;
-        }
-
-        // Create and add user
-        User newUser = new User(username, password, email, firstName, lastName, "user");
-        users.add(newUser);
-        System.out.println("✓ User added to memory: " + username);
-
-        // Save to JSON
-        saveUsersToJson();
-
-        // Force reload to ensure data is consistent
-        loadUsers();
-
-        // Verify the user was actually saved
-        boolean userSaved = users.stream().anyMatch(u -> u.getUsername().equals(username));
-        System.out.println("Final verification - user exists in system: " + userSaved);
-
-        return userSaved;
+        System.out.println("❌ Login failed for: " + username);
+        return false;
     }
 
     public void logout() {
-        currentUser = null;
-        System.out.println("User logged out");
+        if (currentUser != null) {
+            System.out.println("👋 User logged out: " + currentUser.getUsername());
+            currentUser = null;
+        }
     }
 
     public User getCurrentUser() {
         return currentUser;
     }
 
-    public boolean isAdmin() {
-        return currentUser != null && "admin".equals(currentUser.getRole());
+    public Optional<User> getUserByUsername(String username) {
+        return users.stream()
+                .filter(user -> user.getUsername().equals(username))
+                .findFirst();
     }
 
     public List<User> getAllUsers() {
-        return List.copyOf(users);
+        return new ArrayList<>(users);
     }
 
-    // Method to reset data for testing
-    public void resetData() {
-        jsonDataService.resetJsonFile();
-        users.clear();
-        currentUser = null;
-        initializeDefaultUsers();
+    // Debug method
+    public void debugUsers() {
+        System.out.println("=== USERS DEBUG ===");
+        System.out.println("Total users: " + users.size());
+        for (User user : users) {
+            System.out.println("👤 " + user.getUsername() + " | " + user.getEmail() + " | " + user.getRole() + " | Created: " + user.getCreatedAt());
+        }
+        System.out.println("Current user: " + (currentUser != null ? currentUser.getUsername() : "None"));
+        System.out.println("=== END DEBUG ===");
     }
 }

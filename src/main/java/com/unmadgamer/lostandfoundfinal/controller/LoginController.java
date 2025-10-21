@@ -9,6 +9,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -29,23 +30,78 @@ public class LoginController {
     @FXML
     public void initialize() {
         userService = UserService.getInstance();
+        setupKeyboardShortcuts();
+
+        // Debug: Show available users
+        debugUserList();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // Enter key to login
+        passwordTextField.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                handleLogin();
+            }
+        });
+
+        // Clear error message when typing
+        usernameTextField.textProperty().addListener((observable, oldValue, newValue) -> clearErrorMessage());
+        passwordTextField.textProperty().addListener((observable, oldValue, newValue) -> clearErrorMessage());
+    }
+
+    private void clearErrorMessage() {
+        if (!loginMessageField.getText().isEmpty()) {
+            loginMessageField.setText("");
+            usernameTextField.setStyle("");
+            passwordTextField.setStyle("");
+        }
+    }
+
+    private void debugUserList() {
+        System.out.println("=== AVAILABLE USERS ===");
+        userService.getAllUsers().forEach(user -> {
+            System.out.println("👤 " + user.getUsername() + " | " + user.getPassword() + " | " + user.getRole());
+        });
+        System.out.println("=== END USER LIST ===");
     }
 
     @FXML
     private void handleLogin() {
-        String username = usernameTextField.getText();
+        String username = usernameTextField.getText().trim();
         String password = passwordTextField.getText();
 
         if (username.isEmpty() || password.isEmpty()) {
             loginMessageField.setText("Please enter both username and password");
+            highlightEmptyFields(username, password);
             return;
         }
 
+        System.out.println("🔐 Attempting login for: " + username);
+
         if (userService.login(username, password)) {
             loginMessageField.setText("Login successful!");
-            openMainApplication();
+            loginMessageField.setStyle("-fx-text-fill: green;");
+            System.out.println("✅ Login successful for: " + username);
+            openDashboard();
         } else {
             loginMessageField.setText("Invalid username or password");
+            loginMessageField.setStyle("-fx-text-fill: red;");
+            usernameTextField.setStyle("-fx-border-color: red; -fx-border-width: 1px;");
+            passwordTextField.setStyle("-fx-border-color: red; -fx-border-width: 1px;");
+            System.out.println("❌ Login failed for: " + username);
+
+            // Clear password field on failed login
+            passwordTextField.clear();
+            passwordTextField.requestFocus();
+        }
+    }
+
+    private void highlightEmptyFields(String username, String password) {
+        if (username.isEmpty()) {
+            usernameTextField.setStyle("-fx-border-color: red; -fx-border-width: 1px;");
+        }
+        if (password.isEmpty()) {
+            passwordTextField.setStyle("-fx-border-color: red; -fx-border-width: 1px;");
         }
     }
 
@@ -60,7 +116,7 @@ public class LoginController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/Registration.fxml"));
             Parent root = loader.load();
             Stage registerStage = new Stage();
-            registerStage.setTitle("User Registration");
+            registerStage.setTitle("User Registration - Lost and Found System");
             registerStage.setScene(new Scene(root, 600, 530));
             registerStage.show();
         } catch (IOException e) {
@@ -68,13 +124,39 @@ public class LoginController {
         }
     }
 
-    private void openMainApplication() {
+    @FXML
+    private void handleClearForm() {
+        usernameTextField.clear();
+        passwordTextField.clear();
+        loginMessageField.setText("");
+        usernameTextField.setStyle("");
+        passwordTextField.setStyle("");
+        usernameTextField.requestFocus();
+    }
+
+    @FXML
+    private void handleAdminLogin() {
+        // Quick admin login for testing
+        usernameTextField.setText("admin");
+        passwordTextField.setText("admin123");
+        handleLogin();
+    }
+
+    @FXML
+    private void handleDemoLogin() {
+        // Quick demo user login for testing
+        usernameTextField.setText("demo");
+        passwordTextField.setText("demo123");
+        handleLogin();
+    }
+
+    private void openDashboard() {
         try {
             // Close login window
             Stage currentStage = (Stage) usernameTextField.getScene().getWindow();
             currentStage.close();
 
-            // Open dashboard instead of main application
+            // Open dashboard
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/dashboard.fxml"));
             Parent root = loader.load();
 
@@ -82,8 +164,11 @@ public class LoginController {
             dashboardStage.setTitle("Dashboard - Lost and Found System");
             dashboardStage.setScene(new Scene(root, 600, 450));
             dashboardStage.show();
+
+            System.out.println("🎉 Dashboard opened for user: " + userService.getCurrentUser().getUsername());
         } catch (IOException e) {
             showError("Cannot open dashboard: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

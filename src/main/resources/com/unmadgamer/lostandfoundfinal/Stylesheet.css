@@ -18,7 +18,9 @@
 .lost-form{
     -fx-background-color : #FD1414;
     -fx-background-radius : 10px;
-    -fx-font-
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
 }
 
 .found-form{

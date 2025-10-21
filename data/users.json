@@ -5,15 +5,19 @@
   "firstName" : "System",
   "lastName" : "Administrator",
   "role" : "admin",
-  "fullName" : "System Administrator"
-}, {
-  "username" : "user",
-  "password" : "user123",
-  "email" : "user@lostfound.com",
-  "firstName" : "Regular",
-  "lastName" : "User",
-  "role" : "user",
-  "fullName" : "Regular User"
+  "createdAt" : "2025-10-22 00:59:07",
+  "lastLogin" : "2025-10-22 01:57:54",
+  "active" : true,
+  "displayName" : "System Administrator (admin)",
+  "valid" : true,
+  "fullName" : "System Administrator",
+  "admin" : true,
+  "user" : false,
+  "moderator" : false,
+  "roleDisplay" : "Administrator",
+  "emailValid" : true,
+  "usernameValid" : true,
+  "initials" : "SA"
 }, {
   "username" : "reza",
   "password" : "rezareza",
@@ -21,5 +25,17 @@
   "firstName" : "reza",
   "lastName" : "reza",
   "role" : "user",
-  "fullName" : "reza reza"
+  "createdAt" : "2025-10-22 00:59:32",
+  "lastLogin" : "2025-10-22 01:58:16",
+  "active" : true,
+  "displayName" : "reza reza (reza)",
+  "valid" : true,
+  "fullName" : "reza reza",
+  "admin" : false,
+  "user" : true,
+  "moderator" : false,
+  "roleDisplay" : "User",
+  "emailValid" : true,
+  "usernameValid" : true,
+  "initials" : "rr"
 } ]

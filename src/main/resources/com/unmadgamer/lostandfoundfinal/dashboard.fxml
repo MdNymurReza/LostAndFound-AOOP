@@ -13,6 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
+<?import javafx.scene.control.Tooltip?>
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="450.0" prefWidth="600.0" styleClass="parent" stylesheets="@Stylesheet.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.unmadgamer.lostandfoundfinal.controller.DashBoardController">
    <left>
       <AnchorPane prefHeight="354.0" prefWidth="183.0" stylesheets="@Stylesheet.css">
@@ -83,6 +84,18 @@
                <font>
                   <Font name="Arial Rounded MT Bold" size="13.0" />
                </font>
+            </Button>
+            <!-- Add this button to your dashboard.fxml in the sidebar -->
+            <Button fx:id="adminVerificationBtn" layoutX="11.0" layoutY="230.0" mnemonicParsing="false"
+                    onAction="#handleAdminVerification" prefHeight="25.0" prefWidth="167.0"
+                    style="-fx-background-color: transparent; -fx-cursor: hand;"
+                    text="Admin Verification" textFill="#27ae60" underline="true">
+               <font>
+                  <Font name="Arial Rounded MT Bold" size="13.0" />
+               </font>
+               <tooltip>
+                  <Tooltip text="Access admin verification panel (Admin only)" />
+               </tooltip>
             </Button>
          </children>
       </AnchorPane>

@@ -4,64 +4,299 @@ import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ReturnedItemsController {
 
-    @FXML
-    private Label userNameLabel;
+    @FXML private VBox itemsContainer;
+    @FXML private Label totalItemsLabel;
+    @FXML private Label subtitleLabel;
+    @FXML private TextField searchField;
+    @FXML private ComboBox<String> filterCombo;
 
     private ItemService itemService;
     private UserService userService;
+    private List<LostFoundItem> allReturnedItems;
 
     @FXML
     public void initialize() {
         itemService = ItemService.getInstance();
         userService = UserService.getInstance();
 
+        setupEventHandlers();
+        loadReturnedItems();
+
         if (userService.getCurrentUser() != null) {
-            loadReturnedItems();
+            subtitleLabel.setText("Welcome, " + userService.getCurrentUser().getFirstName());
         }
     }
 
+    private void setupEventHandlers() {
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> filterItems());
+        filterCombo.valueProperty().addListener((observable, oldValue, newValue) -> filterItems());
+
+        // Initialize filter combo
+        filterCombo.getItems().addAll("All Items", "Verified Only", "Pending Verification");
+        filterCombo.setValue("All Items");
+    }
+
     private void loadReturnedItems() {
-        String currentUser = userService.getCurrentUser().getUsername();
-        List<LostFoundItem> returnedItems = itemService.getAllItems().stream()
-                .filter(LostFoundItem::isReturned)
-                .toList();
+        // Get all returned items (not just user's) since returned items are system-wide
+        allReturnedItems = itemService.getItemsByStatus("returned");
+        updateStatistics();
+        displayItems(allReturnedItems);
 
-        userNameLabel.setText(userService.getCurrentUser().getFirstName() + " " + userService.getCurrentUser().getLastName());
+        System.out.println("📋 Loaded " + allReturnedItems.size() + " returned items");
+    }
 
-        System.out.println("Loaded " + returnedItems.size() + " returned items for user: " + currentUser);
+    private void updateStatistics() {
+        totalItemsLabel.setText(String.valueOf(allReturnedItems.size()));
+    }
+
+    private void displayItems(List<LostFoundItem> items) {
+        itemsContainer.getChildren().clear();
+
+        if (items.isEmpty()) {
+            Label noItemsLabel = new Label("No returned items found");
+            noItemsLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 16px; -fx-padding: 40px;");
+            itemsContainer.getChildren().add(noItemsLabel);
+            return;
+        }
+
+        for (LostFoundItem item : items) {
+            itemsContainer.getChildren().add(createItemCard(item));
+        }
+    }
+
+    private VBox createItemCard(LostFoundItem item) {
+        VBox card = new VBox();
+        card.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8; -fx-background-radius: 8;");
+        card.setSpacing(10);
+        card.setPadding(new Insets(20));
+        card.setMaxWidth(Double.MAX_VALUE);
+
+        // Header with item name and status
+        HBox header = new HBox();
+        header.setSpacing(10);
+        header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        Label nameLabel = new Label(item.getItemName());
+        nameLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+
+        // Status badge - Returned items are always verified
+        Label statusBadge = new Label("RETURNED");
+        statusBadge.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 4 8; -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 12;");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        // Verification badge
+        Label verificationBadge = new Label(item.isVerified() ? "✓ VERIFIED" : "⏳ PENDING");
+        verificationBadge.setStyle("-fx-text-fill: " +
+                (item.isVerified() ? "#27ae60" : "#e67e22") +
+                "; -fx-font-size: 12px; -fx-font-weight: bold;");
+
+        header.getChildren().addAll(nameLabel, statusBadge, spacer, verificationBadge);
+
+        // Item details
+        Label categoryLabel = new Label("Category: " + item.getCategory());
+        categoryLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
+
+        Label descLabel = new Label(item.getDescription());
+        descLabel.setStyle("-fx-text-fill: #2c3e50; -fx-font-size: 14px;");
+        descLabel.setWrapText(true);
+        descLabel.setMaxWidth(Double.MAX_VALUE);
+
+        // Footer with location, date and actions
+        HBox footer = new HBox();
+        footer.setSpacing(15);
+        footer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        Label locationLabel = new Label("📍 " + item.getLocation());
+        locationLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 13px;");
+
+        Label dateLabel = new Label("📅 " + item.getDate());
+        dateLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 13px;");
+
+        // Show who verified the item if available
+        if (item.getVerifiedBy() != null) {
+            Label verifiedByLabel = new Label("✅ Verified by: " + item.getVerifiedBy());
+            verifiedByLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 13px; -fx-font-weight: bold;");
+            footer.getChildren().add(verifiedByLabel);
+        }
+
+        Region footerSpacer = new Region();
+        HBox.setHgrow(footerSpacer, Priority.ALWAYS);
+
+        Button viewDetailsBtn = new Button("View Details");
+        viewDetailsBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16;");
+        viewDetailsBtn.setOnAction(e -> showItemDetails(item));
+
+        // Add admin actions if user is admin and item is not verified
+        HBox actionButtons = new HBox(10);
+        actionButtons.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+
+        if (userService.getCurrentUser().isAdmin() && !item.isVerified()) {
+            Button verifyBtn = new Button("Verify Return");
+            verifyBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16;");
+            verifyBtn.setOnAction(e -> verifyItem(item));
+            actionButtons.getChildren().add(verifyBtn);
+        }
+
+        actionButtons.getChildren().add(viewDetailsBtn);
+        footer.getChildren().addAll(locationLabel, dateLabel, footerSpacer, actionButtons);
+
+        card.getChildren().addAll(header, categoryLabel, descLabel, footer);
+        return card;
+    }
+
+    private void verifyItem(LostFoundItem item) {
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Confirm Verification");
+        confirmAlert.setHeaderText("Verify Returned Item: " + item.getItemName());
+        confirmAlert.setContentText("Are you sure you want to verify this returned item?");
+
+        confirmAlert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                boolean success = itemService.verifyItem(item.getItemName(), userService.getCurrentUser().getUsername());
+                if (success) {
+                    showAlert("Success", "Returned item has been verified successfully!");
+                    loadReturnedItems(); // Refresh the list
+                } else {
+                    showError("Failed to verify returned item");
+                }
+            }
+        });
+    }
+
+    private void filterItems() {
+        String searchText = searchField.getText().toLowerCase();
+        String filterValue = filterCombo.getValue();
+
+        List<LostFoundItem> filteredItems = allReturnedItems.stream()
+                .filter(item ->
+                        item.getItemName().toLowerCase().contains(searchText) ||
+                                item.getDescription().toLowerCase().contains(searchText) ||
+                                item.getCategory().toLowerCase().contains(searchText) ||
+                                item.getLocation().toLowerCase().contains(searchText) ||
+                                (item.getVerifiedBy() != null && item.getVerifiedBy().toLowerCase().contains(searchText)) ||
+                                item.getReportedBy().toLowerCase().contains(searchText)
+                )
+                .filter(item -> {
+                    if (filterValue == null || "All Items".equals(filterValue)) {
+                        return true;
+                    } else if ("Verified Only".equals(filterValue)) {
+                        return item.isVerified();
+                    } else if ("Pending Verification".equals(filterValue)) {
+                        return !item.isVerified();
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        displayItems(filteredItems);
+    }
+
+    private void showItemDetails(LostFoundItem item) {
+        StringBuilder details = new StringBuilder();
+        details.append("=== RETURNED ITEM DETAILS ===\n\n");
+        details.append("Item Name: ").append(item.getItemName()).append("\n");
+        details.append("Category: ").append(item.getCategory()).append("\n");
+        details.append("Description: ").append(item.getDescription()).append("\n");
+        details.append("Location: ").append(item.getLocation()).append("\n");
+        details.append("Date: ").append(item.getDate()).append("\n");
+        details.append("Reported By: ").append(item.getReportedBy()).append("\n");
+        details.append("Contact Info: ").append(item.getContactInfo() != null ? item.getContactInfo() : "Not provided").append("\n");
+        details.append("Unique ID: ").append(item.getUniqueId()).append("\n\n");
+
+        details.append("=== VERIFICATION STATUS ===\n");
+        if (item.isVerified()) {
+            details.append("✅ VERIFIED\n");
+            details.append("Verified By: ").append(item.getVerifiedBy()).append("\n");
+            details.append("Verification Date: ").append(item.getVerificationDate()).append("\n");
+        } else {
+            details.append("⏳ PENDING VERIFICATION\n");
+            details.append("This returned item is waiting for admin verification.\n");
+        }
+
+        details.append("\n=== RETURN INFORMATION ===\n");
+        details.append("Status: RETURNED\n");
+        details.append("This item has been successfully returned to its owner.");
+
+        TextArea textArea = new TextArea(details.toString());
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setPrefSize(500, 400);
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Returned Item Details");
+        alert.setHeaderText("Returned Item: " + item.getItemName());
+        alert.getDialogPane().setContent(textArea);
+        alert.showAndWait();
+    }
+
+    @FXML
+    private void handleRefresh() {
+        loadReturnedItems();
+        showAlert("Refreshed", "Returned items list has been updated.");
     }
 
     @FXML
     private void handleBackToDashboard() {
-        try {
-            Stage currentStage = (Stage) userNameLabel.getScene().getWindow();
-            currentStage.close();
+        closeWindow();
+    }
 
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/dashboard.fxml"));
-            Parent root = loader.load();
-            Stage dashboardStage = new Stage();
-            dashboardStage.setTitle("Dashboard - Lost and Found System");
-            dashboardStage.setScene(new Scene(root, 600, 450));
-            dashboardStage.show();
-        } catch (IOException e) {
-            showError("Cannot return to dashboard: " + e.getMessage());
+    @FXML
+    private void handleExportReport() {
+        if (allReturnedItems.isEmpty()) {
+            showAlert("No Data", "There are no returned items to export.");
+            return;
+        }
+
+        // Simple export to console for now
+        System.out.println("=== RETURNED ITEMS REPORT ===");
+        System.out.println("Total Items: " + allReturnedItems.size());
+        System.out.println("Generated by: " + userService.getCurrentUser().getUsername());
+        System.out.println("=============================");
+
+        for (LostFoundItem item : allReturnedItems) {
+            System.out.println("• " + item.getItemName() + " | " + item.getCategory() +
+                    " | " + item.getLocation() + " | Verified: " + item.isVerified());
+        }
+
+        showAlert("Report Generated", "Returned items report has been generated in the console.\nTotal items: " + allReturnedItems.size());
+    }
+
+    private void closeWindow() {
+        try {
+            Stage currentStage = (Stage) itemsContainer.getScene().getWindow();
+            currentStage.close();
+            System.out.println("✅ Returned items window closed");
+        } catch (Exception e) {
+            System.err.println("❌ Error closing window: " + e.getMessage());
         }
     }
 
     private void showError(String message) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+        Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

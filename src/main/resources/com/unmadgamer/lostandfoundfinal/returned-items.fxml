@@ -6,39 +6,36 @@
 <?import javafx.scene.text.Font?>
 
 <VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.unmadgamer.lostandfoundfinal.controller.LostItemsController"
+      fx:controller="com.unmadgamer.lostandfoundfinal.controller.ReturnedItemsController"
       spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;">
 
    <!-- Header -->
    <HBox alignment="CENTER_LEFT" spacing="15">
       <VBox spacing="5">
-         <Label text="Lost Items" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-         <Label fx:id="subtitleLabel" text="Track and manage your lost items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
+         <Label text="Returned Items" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+         <Label fx:id="subtitleLabel" text="Items that have been successfully returned to owners" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
       </VBox>
       <Region HBox.hgrow="ALWAYS"/>
       <Button text="Refresh" onAction="#handleRefresh"
               style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+      <Button text="Export Report" onAction="#handleExportReport"
+              style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
       <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
               style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
    </HBox>
 
    <!-- Stats and Filters -->
    <HBox spacing="20" alignment="CENTER_LEFT">
-      <!-- Stats Cards -->
+      <!-- Stats Card -->
       <VBox spacing="5" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 1); -fx-padding: 15;">
-         <Label text="Total Lost Items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 12;"/>
-         <Label fx:id="totalItemsLabel" text="0" style="-fx-text-fill: #e74c3c; -fx-font-size: 24; -fx-font-weight: bold;"/>
-      </VBox>
-
-      <VBox spacing="5" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 1); -fx-padding: 15;">
-         <Label text="Verified Items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 12;"/>
-         <Label fx:id="verifiedItemsLabel" text="0" style="-fx-text-fill: #27ae60; -fx-font-size: 24; -fx-font-weight: bold;"/>
+         <Label text="Total Returned Items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 12;"/>
+         <Label fx:id="totalItemsLabel" text="0" style="-fx-text-fill: #27ae60; -fx-font-size: 24; -fx-font-weight: bold;"/>
       </VBox>
 
       <Region HBox.hgrow="ALWAYS"/>
 
       <!-- Search and Filter -->
-      <TextField fx:id="searchField" promptText="Search lost items..."
+      <TextField fx:id="searchField" promptText="Search returned items..."
                  style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8 15;"
                  prefWidth="200"/>
       <ComboBox fx:id="filterCombo" promptText="Filter by status"
@@ -50,4 +47,10 @@
    <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-border-color: transparent;">
       <VBox fx:id="itemsContainer" spacing="15" style="-fx-padding: 10;"/>
    </ScrollPane>
+
+   <!-- Success Message -->
+   <VBox spacing="5" style="-fx-padding: 10; -fx-background-color: #d4edda; -fx-border-color: #c3e6cb; -fx-border-radius: 5;">
+      <Label text="✅ Success Stories:" style="-fx-font-weight: bold; -fx-text-fill: #155724;"/>
+      <Label text="These items have been successfully returned to their rightful owners!" style="-fx-text-fill: #155724; -fx-font-size: 12;"/>
+   </VBox>
 </VBox>
