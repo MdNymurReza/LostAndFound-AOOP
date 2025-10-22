@@ -222,54 +222,40 @@ public class LoginController {
 
     private void openDashboard() {
         try {
-            // Close login window
+            // Close login window FIRST
             Stage currentStage = (Stage) usernameTextField.getScene().getWindow();
             currentStage.close();
 
             User currentUser = userService.getCurrentUser();
 
-            // COMPREHENSIVE DEBUG INFORMATION
-            System.out.println("\n🔍 ========== NAVIGATION DEBUG START ==========");
-            System.out.println("🔍 Current User: " + (currentUser != null ? currentUser.getUsername() : "null"));
-
-            if (currentUser != null) {
-                System.out.println("🔍 User Details:");
-                System.out.println("🔍   Username: " + currentUser.getUsername());
-                System.out.println("🔍   Role: '" + currentUser.getRole() + "'");
-                System.out.println("🔍   Role (trimmed): '" + currentUser.getRole().trim() + "'");
-                System.out.println("🔍   Role (lowercase): '" + currentUser.getRole().toLowerCase() + "'");
-                System.out.println("🔍   isAdmin(): " + currentUser.isAdmin());
-                System.out.println("🔍   'admin'.equals(role): " + "admin".equals(currentUser.getRole()));
-                System.out.println("🔍   'admin'.equals(role.trim()): " + "admin".equals(currentUser.getRole().trim()));
-                System.out.println("🔍   'admin'.equals(role.toLowerCase()): " + "admin".equals(currentUser.getRole().toLowerCase()));
+            if (currentUser == null) {
+                showError("No user logged in. Please login again.");
+                return;
             }
+
+            System.out.println("\n🔍 ========== NAVIGATION DEBUG START ==========");
+            System.out.println("🔍 Current User: " + currentUser.getUsername());
+            System.out.println("🔍 Role: '" + currentUser.getRole() + "'");
+            System.out.println("🔍 isAdmin(): " + currentUser.isAdmin());
 
             String fxmlFile;
             String title;
 
-            // Enhanced admin detection with multiple checks
-            boolean isAdminUser = false;
-            if (currentUser != null) {
-                // Multiple ways to check if admin
-                String userRole = currentUser.getRole();
-                isAdminUser = userRole != null && (
-                        "admin".equals(userRole.trim()) ||
-                                "admin".equals(userRole.trim().toLowerCase()) ||
-                                currentUser.isAdmin()
-                );
+            // SIMPLIFIED Admin Detection - Use the isAdmin() method from User class
+            boolean isAdminUser = currentUser.isAdmin();
 
-                System.out.println("🔍 Admin Detection Result:");
-                System.out.println("🔍   Final isAdminUser: " + isAdminUser);
-            }
+            System.out.println("🔍 Final Admin Detection: " + isAdminUser);
 
             if (isAdminUser) {
+                // ADMIN USERS go directly to Admin Verification Dashboard
                 fxmlFile = "/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml";
-                title = "Admin Dashboard - Lost and Found System";
-                System.out.println("🚀 ADMIN USER CONFIRMED - Redirecting to: " + fxmlFile);
+                title = "Admin Verification Dashboard - Lost and Found System";
+                System.out.println("🚀 ADMIN USER - Opening Admin Verification Dashboard");
             } else {
+                // REGULAR USERS go to regular Dashboard
                 fxmlFile = "/com/unmadgamer/lostandfoundfinal/dashboard.fxml";
                 title = "Dashboard - Lost and Found System";
-                System.out.println("🎉 REGULAR USER - Redirecting to: " + fxmlFile);
+                System.out.println("🎉 REGULAR USER - Opening User Dashboard");
             }
 
             // Debug: Check if FXML file exists
@@ -277,26 +263,16 @@ public class LoginController {
             URL fxmlUrl = getClass().getResource(fxmlFile);
             if (fxmlUrl == null) {
                 System.err.println("❌ FXML FILE NOT FOUND: " + fxmlFile);
-
-                // List all available FXML files for debugging
-                System.out.println("🔍 Available FXML files:");
-                try {
-                    java.nio.file.Path resourcesPath = java.nio.file.Paths.get("src/main/resources/com/unmadgamer/lostandfoundfinal");
-                    if (java.nio.file.Files.exists(resourcesPath)) {
-                        java.nio.file.Files.list(resourcesPath)
-                                .filter(path -> path.toString().endsWith(".fxml"))
-                                .forEach(path -> System.out.println("   📄 " + path.getFileName()));
-                    }
-                } catch (Exception e) {
-                    System.err.println("❌ Could not list FXML files: " + e.getMessage());
-                }
-
                 showError("Dashboard file not found: " + fxmlFile);
+
+                // Fallback: Open login window again
+                openLoginWindow();
                 return;
             }
+
             System.out.println("✅ FXML file found: " + fxmlUrl);
 
-            // Open appropriate dashboard
+            // Open ONLY ONE dashboard window
             System.out.println("🔍 Loading FXML...");
             FXMLLoader loader = new FXMLLoader(fxmlUrl);
             Parent root = loader.load();
@@ -311,7 +287,7 @@ public class LoginController {
                 dashboardStage.setScene(new Scene(root, 1200, 800)); // Larger for admin
                 System.out.println("✅ Setting up ADMIN dashboard window (1200x800)");
             } else {
-                dashboardStage.setScene(new Scene(root, 600, 400)); // Regular size for users
+                dashboardStage.setScene(new Scene(root, 600, 530)); // Regular size for users
                 System.out.println("✅ Setting up REGULAR USER dashboard window (800x600)");
             }
 
@@ -324,10 +300,30 @@ public class LoginController {
             System.err.println("❌ Error opening dashboard: " + e.getMessage());
             e.printStackTrace();
             showError("Cannot open dashboard: " + e.getMessage());
+
+            // Fallback: Open login window again
+            openLoginWindow();
         } catch (Exception e) {
             System.err.println("❌ Unexpected error: " + e.getMessage());
             e.printStackTrace();
             showError("Unexpected error: " + e.getMessage());
+
+            // Fallback: Open login window again
+            openLoginWindow();
+        }
+    }
+
+    // Add this helper method for fallback
+    private void openLoginWindow() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/Login.fxml"));
+            Parent root = loader.load();
+            Stage loginStage = new Stage();
+            loginStage.setTitle("Lost and Found System - Login");
+            loginStage.setScene(new Scene(root, 660, 400));
+            loginStage.show();
+        } catch (Exception e) {
+            System.err.println("❌ Critical: Cannot even open login window: " + e.getMessage());
         }
     }
 

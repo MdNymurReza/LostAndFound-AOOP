@@ -75,6 +75,13 @@ public class DashBoardController {
     @FXML
     private Label itemsReturnedCountLabel;
 
+    // NEW: Reward system debug buttons
+    @FXML
+    private Button checkRewardsBtn;
+
+    @FXML
+    private Button debugRewardsBtn;
+
     private UserService userService;
     private User currentUser;
     private ItemService itemService;
@@ -91,6 +98,7 @@ public class DashBoardController {
             refreshDashboard();
             loadLeaderboard();
             setupAdminFeatures();
+            setupRewardFeatures();
 
             // Debug data state
             debugDataState();
@@ -108,6 +116,19 @@ public class DashBoardController {
         } else {
             adminVerificationBtn.setVisible(false);
             adminVerificationBtn.setManaged(false);
+        }
+    }
+
+    // NEW: Setup reward system features
+    private void setupRewardFeatures() {
+        // Make reward debug buttons visible for testing
+        if (checkRewardsBtn != null) {
+            checkRewardsBtn.setVisible(true);
+            checkRewardsBtn.setManaged(true);
+        }
+        if (debugRewardsBtn != null) {
+            debugRewardsBtn.setVisible(true);
+            debugRewardsBtn.setManaged(true);
         }
     }
 
@@ -183,28 +204,35 @@ public class DashBoardController {
 
     private void updateRewardDisplay() {
         if (currentUser != null) {
+            // Update reward points label
+            if (rewardPointsLabel != null) {
+                rewardPointsLabel.setText(String.valueOf(currentUser.getRewardPoints()));
+                rewardPointsLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #FFD700;");
+            }
+
+            // Update items returned count
+            if (itemsReturnedCountLabel != null) {
+                itemsReturnedCountLabel.setText(String.valueOf(currentUser.getItemsReturned()));
+                itemsReturnedCountLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #4CAF50;");
+            }
+
             // Update reward tier
             if (rewardTierLabel != null) {
                 rewardTierLabel.setText(currentUser.getRewardTier());
                 // Color code the tier
                 switch (currentUser.getRewardTier()) {
                     case "Platinum":
-                        rewardTierLabel.setStyle("-fx-text-fill: #e5e4e2; -fx-font-weight: bold;");
+                        rewardTierLabel.setStyle("-fx-text-fill: #e5e4e2; -fx-font-weight: bold; -fx-font-size: 14;");
                         break;
                     case "Gold":
-                        rewardTierLabel.setStyle("-fx-text-fill: #ffd700; -fx-font-weight: bold;");
+                        rewardTierLabel.setStyle("-fx-text-fill: #ffd700; -fx-font-weight: bold; -fx-font-size: 14;");
                         break;
                     case "Silver":
-                        rewardTierLabel.setStyle("-fx-text-fill: #c0c0c0; -fx-font-weight: bold;");
+                        rewardTierLabel.setStyle("-fx-text-fill: #c0c0c0; -fx-font-weight: bold; -fx-font-size: 14;");
                         break;
                     default:
-                        rewardTierLabel.setStyle("-fx-text-fill: #cd7f32; -fx-font-weight: bold;");
+                        rewardTierLabel.setStyle("-fx-text-fill: #cd7f32; -fx-font-weight: bold; -fx-font-size: 14;");
                 }
-            }
-
-            // Update items returned count
-            if (itemsReturnedCountLabel != null) {
-                itemsReturnedCountLabel.setText(String.valueOf(currentUser.getItemsReturned()));
             }
 
             System.out.println("🎯 Reward display updated - Points: " + currentUser.getRewardPoints() +
@@ -252,6 +280,89 @@ public class DashBoardController {
         score3Label.setText(String.valueOf(Math.max(0, userPoints - 20)));
 
         System.out.println("🏆 Leaderboard loaded - User rank: #1 with " + userPoints + " points");
+    }
+
+    // ===== REWARD SYSTEM METHODS =====
+
+    @FXML
+    private void handleCheckRewardStatus() {
+        User currentUser = userService.getCurrentUser();
+        if (currentUser != null) {
+            System.out.println("=== CURRENT REWARD STATUS ===");
+            System.out.println("User: " + currentUser.getUsername());
+            System.out.println("Points: " + currentUser.getRewardPoints());
+            System.out.println("Items Returned: " + currentUser.getItemsReturned());
+            System.out.println("Tier: " + currentUser.getRewardTier());
+            System.out.println("Multiplier: " + currentUser.getTierMultiplier());
+            System.out.println("Next Tier: " + currentUser.getNextTierInfo());
+
+            // Check JSON file directly
+            try {
+                String content = new String(java.nio.file.Files.readAllBytes(
+                        java.nio.file.Paths.get("data/users.json")));
+                System.out.println("Users JSON: " + content);
+            } catch (Exception e) {
+                System.err.println("Could not read users.json: " + e.getMessage());
+            }
+            System.out.println("=== END STATUS ===");
+
+            String benefits = currentUser.getTierBenefits().replace("•", "\n•");
+
+            showAlert("Reward System Status",
+                    "🏆 Reward System Status\n\n" +
+                            "👤 User: " + currentUser.getUsername() +
+                            "\n📊 Points: " + currentUser.getRewardPoints() +
+                            "\n📦 Items Returned: " + currentUser.getItemsReturned() +
+                            "\n💎 Tier: " + currentUser.getRewardTier() +
+                            "\n⭐ Multiplier: " + currentUser.getTierMultiplier() + "x" +
+                            "\n\n🎯 " + currentUser.getNextTierInfo() +
+                            "\n\nBenefits:\n" + benefits,
+                    Alert.AlertType.INFORMATION);
+        }
+    }
+
+    @FXML
+    private void handleDebugRewards() {
+        itemService.debugRewardSystem();
+        showAlert("Reward System Debug",
+                "Complete reward system debug information printed to console.\n\n" +
+                        "This shows:\n" +
+                        "• All users and their reward points\n" +
+                        "• Total returned items in system\n" +
+                        "• Pending claims\n" +
+                        "Check the console for detailed information.",
+                Alert.AlertType.INFORMATION);
+    }
+
+    @FXML
+    private void handleViewRewardDetails() {
+        if (currentUser != null) {
+            String benefits = currentUser.getTierBenefits().replace("•", "\n•");
+            String details = "🎯 Reward System Details\n\n" +
+                    "📊 Your Current Status:\n" +
+                    "• Points: " + currentUser.getRewardPoints() + "\n" +
+                    "• Items Returned: " + currentUser.getItemsReturned() + "\n" +
+                    "• Tier: " + currentUser.getRewardTier() + "\n" +
+                    "• Multiplier: " + currentUser.getTierMultiplier() + "x\n\n" +
+
+                    "🏆 Tier System:\n" +
+                    "• Bronze: 0-199 points (1.0x)\n" +
+                    "• Silver: 200-499 points (1.25x)\n" +
+                    "• Gold: 500-999 points (1.5x)\n" +
+                    "• Platinum: 1000+ points (2.0x)\n\n" +
+
+                    "💰 Earning Points:\n" +
+                    "• Return lost item: 50 points\n" +
+                    "• Help return found item: 50 points\n" +
+                    "• Activity bonus: +20 points (after 5+ returns)\n" +
+                    "• Random bonus: 0-100 points\n\n" +
+
+                    "🎁 Your Benefits:\n" + benefits + "\n\n" +
+
+                    "🎯 Progress: " + currentUser.getNextTierInfo();
+
+            showAlert("Reward System Guide", details, Alert.AlertType.INFORMATION);
+        }
     }
 
     // ===== NAVIGATION METHODS =====
@@ -435,6 +546,14 @@ public class DashBoardController {
 
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

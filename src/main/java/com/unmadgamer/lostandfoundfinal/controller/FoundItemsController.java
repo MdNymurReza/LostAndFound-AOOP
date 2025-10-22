@@ -209,18 +209,39 @@ public class FoundItemsController {
 
     @FXML
     private void handleBackToDashboard() {
+        System.out.println("Clicked: Back to Dashboard from Found Items");
+
         try {
+            // Close current found items window
             Stage currentStage = (Stage) itemsTable.getScene().getWindow();
             currentStage.close();
 
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/dashboard.fxml"));
-            Parent root = loader.load();
+            // Check if dashboard is already open
+            boolean dashboardExists = false;
+            for (Stage stage : Stage.getWindows().stream()
+                    .filter(window -> window instanceof Stage)
+                    .map(window -> (Stage) window)
+                    .collect(Collectors.toList())) {
+                if (stage.getTitle() != null && stage.getTitle().contains("Dashboard")) {
+                    dashboardExists = true;
+                    stage.toFront(); // Bring to front if exists
+                    break;
+                }
+            }
 
-            Stage dashboardStage = new Stage();
-            dashboardStage.setTitle("Dashboard - Lost and Found System");
-            dashboardStage.setScene(new Scene(root, 800, 600));
-            dashboardStage.show();
+            // Only open new dashboard if none exists
+            if (!dashboardExists) {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/dashboard.fxml"));
+                Parent root = loader.load();
+
+                Stage dashboardStage = new Stage();
+                dashboardStage.setTitle("Dashboard - Lost and Found System");
+                dashboardStage.setScene(new Scene(root, 800, 600));
+                dashboardStage.show();
+            }
+
         } catch (IOException e) {
+            System.err.println("❌ Error navigating to dashboard: " + e.getMessage());
             showAlert("Navigation Error", "Cannot open dashboard: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }

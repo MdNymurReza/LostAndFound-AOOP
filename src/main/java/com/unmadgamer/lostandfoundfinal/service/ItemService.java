@@ -133,17 +133,18 @@ public class ItemService {
                         lostItem.setClaimStatus("pending");
                         lostItem.setClaimedBy(claimant);
                         lostItem.setStatus("claimed");
+                        System.out.println("✅ Lost item claimed: " + item.getItemName() + " by " + claimant);
                     }
                 } else if (item instanceof FoundItem) {
                     FoundItem foundItem = (FoundItem) item;
                     if (foundItem.canBeClaimed()) {
                         foundItem.claimItem(claimant);
                         foundItem.setStatus("claimed");
+                        System.out.println("✅ Found item claimed: " + item.getItemName() + " by " + claimant);
                     }
                 }
 
                 saveItems();
-                System.out.println("✅ Item claimed: " + item.getItemName() + " by " + claimant);
                 return true;
             }
         }
@@ -179,14 +180,14 @@ public class ItemService {
         return pendingClaims;
     }
 
-    // NEW: Get successfully returned items
+    // Get successfully returned items
     public List<LostFoundItem> getReturnedItems() {
         return items.stream()
                 .filter(item -> "returned".equals(item.getStatus()))
                 .collect(Collectors.toList());
     }
 
-    // NEW: Get returned items by user
+    // Get returned items by user
     public List<LostFoundItem> getReturnedItemsByUser(String username) {
         return items.stream()
                 .filter(item -> "returned".equals(item.getStatus()))
@@ -240,17 +241,20 @@ public class ItemService {
         return false;
     }
 
-    // NEW: Complete Reward System for Successful Returns
+    // FIXED: Complete Reward System for Successful Returns
     public boolean completeSuccessfulReturn(String itemId, String adminUsername) {
         Optional<LostFoundItem> itemOpt = getItemById(itemId);
 
         if (itemOpt.isPresent()) {
             LostFoundItem item = itemOpt.get();
+            System.out.println("🎯 Processing return for item: " + item.getItemName() + " | Type: " + item.getType());
 
             if (item instanceof LostItem) {
                 LostItem lostItem = (LostItem) item;
-                if (lostItem.isClaimPending()) {
-                    // Reward the user who found and returned the item
+                System.out.println("🔍 Lost Item - Claimed By: " + lostItem.getClaimedBy() + " | Claim Status: " + lostItem.getClaimStatus());
+
+                if (lostItem.isClaimPending() && lostItem.getClaimedBy() != null) {
+                    // Reward the user who found and returned the item (the claimant)
                     User finder = userService.getUserByUsername(lostItem.getClaimedBy()).orElse(null);
                     if (finder != null) {
                         int rewardPoints = 50; // Base reward points
@@ -260,19 +264,29 @@ public class ItemService {
                         // Update item status
                         lostItem.setStatus("returned");
                         lostItem.setClaimStatus("approved");
+                        lostItem.setVerificationStatus("verified"); // Ensure it's verified
 
                         saveItems();
                         userService.saveUsers(); // Save user data to persist rewards
 
-                        System.out.println("🎁 Rewarded " + finder.getUsername() + " with " + rewardPoints +
-                                " points for returning: " + lostItem.getItemName());
+                        System.out.println("🎁 SUCCESS: Rewarded " + finder.getUsername() +
+                                " with " + rewardPoints + " points for returning: " + lostItem.getItemName());
+                        System.out.println("📊 User now has: " + finder.getRewardPoints() + " points and " +
+                                finder.getItemsReturned() + " items returned");
                         return true;
+                    } else {
+                        System.err.println("❌ ERROR: Could not find user: " + lostItem.getClaimedBy());
                     }
+                } else {
+                    System.err.println("❌ ERROR: Lost item not in claimable state - Pending: " +
+                            lostItem.isClaimPending() + " | ClaimedBy: " + lostItem.getClaimedBy());
                 }
             } else if (item instanceof FoundItem) {
                 FoundItem foundItem = (FoundItem) item;
-                if (foundItem.isClaimPending()) {
-                    // Reward the user who reported the found item
+                System.out.println("🔍 Found Item - Claimed By: " + foundItem.getClaimedBy() + " | Claim Status: " + foundItem.getClaimStatus());
+
+                if (foundItem.isClaimPending() && foundItem.getClaimedBy() != null) {
+                    // For found items, reward the user who reported the found item
                     User reporter = userService.getUserByUsername(foundItem.getReportedBy()).orElse(null);
                     if (reporter != null) {
                         int rewardPoints = 50; // Base reward points
@@ -282,23 +296,40 @@ public class ItemService {
                         // Update item status
                         foundItem.setStatus("returned");
                         foundItem.setClaimStatus("approved");
+                        foundItem.setVerificationStatus("verified"); // Ensure it's verified
 
                         saveItems();
                         userService.saveUsers(); // Save user data to persist rewards
 
-                        System.out.println("🎁 Rewarded " + reporter.getUsername() + " with " + rewardPoints +
-                                " points for helping return: " + foundItem.getItemName());
+                        System.out.println("🎁 SUCCESS: Rewarded " + reporter.getUsername() +
+                                " with " + rewardPoints + " points for helping return: " + foundItem.getItemName());
+                        System.out.println("📊 User now has: " + reporter.getRewardPoints() + " points and " +
+                                reporter.getItemsReturned() + " items returned");
                         return true;
+                    } else {
+                        System.err.println("❌ ERROR: Could not find user: " + foundItem.getReportedBy());
                     }
+                } else {
+                    System.err.println("❌ ERROR: Found item not in claimable state - Pending: " +
+                            foundItem.isClaimPending() + " | ClaimedBy: " + foundItem.getClaimedBy());
                 }
             }
+        } else {
+            System.err.println("❌ ERROR: Item not found with ID: " + itemId);
         }
         return false;
     }
 
     // Claim approval methods
     public boolean approveClaim(String itemId, String adminUsername) {
-        return completeSuccessfulReturn(itemId, adminUsername);
+        System.out.println("🔄 Approving claim for item: " + itemId);
+        boolean result = completeSuccessfulReturn(itemId, adminUsername);
+        if (result) {
+            System.out.println("✅ Claim approved successfully");
+        } else {
+            System.err.println("❌ Failed to approve claim");
+        }
+        return result;
     }
 
     public boolean rejectClaim(String itemId, String adminUsername) {
@@ -369,6 +400,70 @@ public class ItemService {
         return new ArrayList<>(items);
     }
 
+    // NEW: Debug method for reward system
+    public void debugRewardFlow(String itemId) {
+        System.out.println("=== REWARD FLOW DEBUG ===");
+        Optional<LostFoundItem> itemOpt = getItemById(itemId);
+
+        if (itemOpt.isPresent()) {
+            LostFoundItem item = itemOpt.get();
+            System.out.println("Item: " + item.getItemName() + " | Type: " + item.getType());
+            System.out.println("Status: " + item.getStatus() + " | Verified: " + item.isVerified());
+
+            if (item instanceof LostItem) {
+                LostItem lostItem = (LostItem) item;
+                System.out.println("Claimed By: " + lostItem.getClaimedBy());
+                System.out.println("Claim Status: " + lostItem.getClaimStatus());
+                System.out.println("Can Reward: " + (lostItem.isClaimPending() && lostItem.getClaimedBy() != null));
+
+                if (lostItem.getClaimedBy() != null) {
+                    User user = userService.getUserByUsername(lostItem.getClaimedBy()).orElse(null);
+                    System.out.println("User Exists: " + (user != null));
+                    if (user != null) {
+                        System.out.println("Current Points: " + user.getRewardPoints());
+                        System.out.println("Current Items Returned: " + user.getItemsReturned());
+                    }
+                }
+            } else if (item instanceof FoundItem) {
+                FoundItem foundItem = (FoundItem) item;
+                System.out.println("Claimed By: " + foundItem.getClaimedBy());
+                System.out.println("Claim Status: " + foundItem.getClaimStatus());
+                System.out.println("Reported By: " + foundItem.getReportedBy());
+                System.out.println("Can Reward: " + (foundItem.isClaimPending() && foundItem.getClaimedBy() != null));
+
+                User user = userService.getUserByUsername(foundItem.getReportedBy()).orElse(null);
+                System.out.println("User Exists: " + (user != null));
+                if (user != null) {
+                    System.out.println("Current Points: " + user.getRewardPoints());
+                    System.out.println("Current Items Returned: " + user.getItemsReturned());
+                }
+            }
+        } else {
+            System.out.println("❌ Item not found: " + itemId);
+        }
+        System.out.println("=== END DEBUG ===");
+    }
+
+    // NEW: Debug reward system for all users
+    public void debugRewardSystem() {
+        System.out.println("=== REWARD SYSTEM DEBUG ===");
+
+        List<User> allUsers = userService.getAllUsers();
+        System.out.println("Total Users: " + allUsers.size());
+        for (User user : allUsers) {
+            System.out.println("👤 " + user.getUsername() +
+                    " | Points: " + user.getRewardPoints() +
+                    " | Items Returned: " + user.getItemsReturned() +
+                    " | Tier: " + user.getRewardTier());
+        }
+
+        long returnedItems = getReturnedItems().size();
+        long pendingClaims = getPendingClaimItems().size();
+        System.out.println("📦 Total Returned Items in System: " + returnedItems);
+        System.out.println("⏳ Pending Claims: " + pendingClaims);
+        System.out.println("=== END REWARD DEBUG ===");
+    }
+
     // Debug method to see current items
     public void debugCurrentItems() {
         System.out.println("=== CURRENT ITEMS DEBUG ===");
@@ -382,6 +477,7 @@ public class ItemService {
             System.out.println("   - " + item.getItemName() +
                     " | Status: " + item.getStatus() +
                     " | Claimed by: " + item.getClaimedBy() +
+                    " | Claim Status: " + item.getClaimStatus() +
                     " | Verified: " + item.isVerified());
         }
 
@@ -390,6 +486,7 @@ public class ItemService {
             System.out.println("   - " + item.getItemName() +
                     " | Status: " + item.getStatus() +
                     " | Claimed by: " + item.getClaimedBy() +
+                    " | Claim Status: " + item.getClaimStatus() +
                     " | Verified: " + item.isVerified());
         }
 
@@ -397,6 +494,7 @@ public class ItemService {
         System.out.println("🔍 Available found items: " + getAvailableFoundItems().size());
         System.out.println("⏳ Pending verification: " + getPendingVerificationCount());
         System.out.println("✅ Returned items: " + getReturnedItemsCount());
+        System.out.println("⏳ Pending claims: " + getPendingClaimItems().size());
         System.out.println("=== END DEBUG ===");
     }
 

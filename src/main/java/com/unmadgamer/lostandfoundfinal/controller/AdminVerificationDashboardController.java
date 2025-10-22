@@ -51,6 +51,9 @@ public class AdminVerificationDashboardController {
     @FXML private TableColumn<LostFoundItem, String> colClaimDate;
     @FXML private TableColumn<LostFoundItem, Void> colClaimActions;
 
+    // NEW: Add debug button
+    @FXML private Button debugRewardBtn;
+
     private ItemService itemService;
     private UserService userService;
     private ObservableList<LostFoundItem> pendingItems;
@@ -170,11 +173,13 @@ public class AdminVerificationDashboardController {
         colClaimActions.setCellFactory(param -> new TableCell<>() {
             private final Button approveBtn = new Button("Approve Return");
             private final Button rejectBtn = new Button("Reject");
-            private final HBox buttons = new HBox(5, approveBtn, rejectBtn);
+            private final Button debugBtn = new Button("Debug");
+            private final HBox buttons = new HBox(5, approveBtn, rejectBtn, debugBtn);
 
             {
                 approveBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 11;");
                 rejectBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 11;");
+                debugBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 11;");
 
                 approveBtn.setOnAction(event -> {
                     LostFoundItem item = getTableView().getItems().get(getIndex());
@@ -184,6 +189,11 @@ public class AdminVerificationDashboardController {
                 rejectBtn.setOnAction(event -> {
                     LostFoundItem item = getTableView().getItems().get(getIndex());
                     rejectClaim(item);
+                });
+
+                debugBtn.setOnAction(event -> {
+                    LostFoundItem item = getTableView().getItems().get(getIndex());
+                    debugRewardFlow(item);
                 });
             }
 
@@ -273,7 +283,7 @@ public class AdminVerificationDashboardController {
         }
     }
 
-    // Claim approval methods with REWARD SYSTEM
+    // Claim approval methods with FIXED REWARD SYSTEM
     private void approveClaim(LostFoundItem item) {
         String adminUsername = userService.getCurrentUser().getUsername();
 
@@ -282,21 +292,30 @@ public class AdminVerificationDashboardController {
         confirmation.setHeaderText("Confirm Item Return");
         confirmation.setContentText("Are you sure this item has been successfully returned to its owner?\n\n" +
                 "Item: " + item.getItemName() + "\n" +
-                "Reward: 50 points will be awarded to the user\n" +
+                "Type: " + item.getType() + "\n" +
+                "Reward: 50 points will be awarded\n" +
                 "This action cannot be undone.");
 
         confirmation.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
+                System.out.println("🔄 Attempting to approve claim and award rewards...");
                 if (itemService.approveClaim(item.getId(), adminUsername)) {
                     showAlert("Return Confirmed",
                             "✅ Item return has been confirmed!\n\n" +
-                                    "🎁 50 reward points have been awarded to the user\n" +
-                                    "📦 Item marked as successfully returned",
+                                    "🎁 50 reward points have been awarded\n" +
+                                    "📦 Item marked as successfully returned\n" +
+                                    "💎 Check user dashboard for updated rewards",
                             Alert.AlertType.INFORMATION);
                     loadData();
                     updateStatistics();
+
+                    // Debug: Show current reward state
+                    itemService.debugRewardSystem();
                 } else {
-                    showAlert("Error", "Failed to confirm return. Please try again.", Alert.AlertType.ERROR);
+                    showAlert("Error",
+                            "Failed to confirm return. Please try again.\n\n" +
+                                    "Check console for detailed error information.",
+                            Alert.AlertType.ERROR);
                 }
             }
         });
@@ -326,6 +345,17 @@ public class AdminVerificationDashboardController {
                 }
             }
         });
+    }
+
+    // NEW: Debug reward flow for selected item
+    private void debugRewardFlow(LostFoundItem item) {
+        System.out.println("🔍 Debugging reward flow for: " + item.getItemName());
+        itemService.debugRewardFlow(item.getId());
+        showAlert("Debug Info",
+                "Check console for detailed reward flow information.\n\n" +
+                        "Item: " + item.getItemName() + "\n" +
+                        "Type: " + item.getType(),
+                Alert.AlertType.INFORMATION);
     }
 
     private void viewItemDetails(LostFoundItem item) {
@@ -410,6 +440,16 @@ public class AdminVerificationDashboardController {
 
         loadData();
         updateStatistics();
+    }
+
+    // NEW: Debug the entire reward system
+    @FXML
+    private void handleDebugRewardSystem() {
+        itemService.debugRewardSystem();
+        showAlert("Reward System Debug",
+                "Check console for complete reward system status.\n\n" +
+                        "This shows all users and their current reward points.",
+                Alert.AlertType.INFORMATION);
     }
 
     @FXML

@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -13,8 +14,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<?import javafx.scene.control.Tooltip?>
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="450.0" prefWidth="600.0" styleClass="parent" stylesheets="@Stylesheet.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.unmadgamer.lostandfoundfinal.controller.DashBoardController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="530.0" prefWidth="600.0" styleClass="parent" stylesheets="@Stylesheet.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.unmadgamer.lostandfoundfinal.controller.DashBoardController">
    <left>
       <AnchorPane prefHeight="354.0" prefWidth="183.0" stylesheets="@Stylesheet.css">
          <BorderPane.margin>
@@ -86,10 +86,7 @@
                </font>
             </Button>
             <!-- Add this button to your dashboard.fxml in the sidebar -->
-            <Button fx:id="adminVerificationBtn" layoutX="11.0" layoutY="230.0" mnemonicParsing="false"
-                    onAction="#handleAdminVerification" prefHeight="25.0" prefWidth="167.0"
-                    style="-fx-background-color: transparent; -fx-cursor: hand;"
-                    text="Admin Verification" textFill="#27ae60" underline="true">
+            <Button fx:id="adminVerificationBtn" layoutX="11.0" layoutY="230.0" mnemonicParsing="false" onAction="#handleAdminVerification" prefHeight="25.0" prefWidth="167.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Admin Verification" textFill="#27ae60" underline="true">
                <font>
                   <Font name="Arial Rounded MT Bold" size="13.0" />
                </font>
@@ -250,6 +247,80 @@
                               <Insets top="12.0" />
                            </VBox.margin>
                         </HBox>
+
+                        <!-- NEW: Reward System Section -->
+                        <VBox prefWidth="370.0" style="-fx-border-color: #4CAF50; -fx-border-width: 2; -fx-border-radius: 8; -fx-background-color: #f8fff8; -fx-background-radius: 8; -fx-padding: 10; -fx-spacing: 10;">
+                           <VBox.margin>
+                              <Insets left="10.0" right="10.0" top="15.0" />
+                           </VBox.margin>
+                           <children>
+                              <Label style="-fx-font-weight: bold; -fx-font-size: 16; -fx-text-fill: #2E7D32;" text="🎯 Reward System" />
+
+                              <HBox alignment="CENTER_LEFT" spacing="15">
+                                 <VBox spacing="5">
+                                    <Label style="-fx-font-weight: bold; -fx-font-size: 12;" text="Reward Tier:" />
+                                    <Label fx:id="rewardTierLabel" style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #CD7F32;" text="Bronze" />
+                                 </VBox>
+                                 <VBox spacing="5">
+                                    <Label style="-fx-font-weight: bold; -fx-font-size: 12;" text="Items Returned:" />
+                                    <Label fx:id="itemsReturnedCountLabel" style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #4CAF50;" text="0" />
+                                 </VBox>
+                              </HBox>
+
+                              <HBox alignment="CENTER" spacing="10">
+                                 <Button fx:id="checkRewardsBtn" onAction="#handleCheckRewardStatus" prefWidth="140" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 10;" text="Check Reward Status">
+                                    <font>
+                                       <Font name="Calibri Bold" size="12.0" />
+                                    </font>
+                                    <tooltip>
+                                       <Tooltip text="Check your current reward status and points" />
+                                    </tooltip>
+                                 </Button>
+<!--                                 <Button fx:id="debugRewardsBtn" onAction="#handleDebugRewards" prefWidth="120" style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 10;" text="Debug Rewards">-->
+<!--                                    <font>-->
+<!--                                       <Font name="Calibri Bold" size="12.0" />-->
+<!--                                    </font>-->
+<!--                                    <tooltip>-->
+<!--                                       <Tooltip text="Debug the reward system (check console)" />-->
+<!--                                    </tooltip>-->
+<!--                                 </Button>-->
+                                 <Button onAction="#handleViewRewardDetails" prefWidth="120" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 10;" text="Reward Guide">
+                                    <font>
+                                       <Font name="Calibri Bold" size="12.0" />
+                                    </font>
+                                    <tooltip>
+                                       <Tooltip text="Learn how the reward system works" />
+                                    </tooltip>
+                                 </Button>
+                              </HBox>
+                           </children>
+                        </VBox>
+
+                        <!-- Admin Stats Section (Only visible for admins) -->
+                        <VBox fx:id="adminStatsSection" managed="false" prefWidth="370.0" style="-fx-border-color: #9b59b6; -fx-border-width: 2; -fx-border-radius: 8; -fx-background-color: #f8f4ff; -fx-background-radius: 8; -fx-padding: 10; -fx-spacing: 8;" visible="false">
+                           <VBox.margin>
+                              <Insets left="10.0" right="10.0" top="10.0" />
+                           </VBox.margin>
+                           <children>
+                              <Label style="-fx-font-weight: bold; -fx-font-size: 14; -fx-text-fill: #8e44ad;" text="👑 Admin Statistics" />
+
+                              <HBox alignment="CENTER_LEFT" spacing="20">
+                                 <VBox spacing="3">
+                                    <Label style="-fx-font-weight: bold; -fx-font-size: 11;" text="Pending Claims:" />
+                                    <Label fx:id="pendingClaimsLabel" style="-fx-font-size: 13; -fx-font-weight: bold; -fx-text-fill: #e74c3c;" text="0" />
+                                 </VBox>
+                                 <VBox spacing="3">
+                                    <Label style="-fx-font-weight: bold; -fx-font-size: 11;" text="Total Items:" />
+                                    <Label fx:id="totalItemsLabel" style="-fx-font-size: 13; -fx-font-weight: bold; -fx-text-fill: #3498db;" text="0" />
+                                 </VBox>
+                                 <VBox spacing="3">
+                                    <Label style="-fx-font-weight: bold; -fx-font-size: 11;" text="Verified Items:" />
+                                    <Label fx:id="verifiedItemsLabel" style="-fx-font-size: 13; -fx-font-weight: bold; -fx-text-fill: #27ae60;" text="0" />
+                                 </VBox>
+                              </HBox>
+                           </children>
+                        </VBox>
+
                      </children>
                   </VBox>
                </children>
@@ -257,4 +328,34 @@
          </children>
       </AnchorPane>
    </center>
+
+   <!-- Bottom Section with Refresh and Debug Buttons -->
+   <bottom>
+      <HBox alignment="CENTER" prefHeight="51.0" prefWidth="629.0" spacing="15" style="-fx-padding: 10; -fx-background-color: #f5f5f5;">
+         <Button onAction="#handleRefreshDashboard" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 8 15;" text="🔄 Refresh Dashboard">
+            <font>
+               <Font name="Calibri Bold" size="12.0" />
+            </font>
+            <tooltip>
+               <Tooltip text="Refresh all dashboard statistics" />
+            </tooltip>
+         </Button>
+<!--         <Button onAction="#handleDataDebug" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 8 15;" text="🐛 Data Debug">-->
+<!--            <font>-->
+<!--               <Font name="Calibri Bold" size="12.0" />-->
+<!--            </font>-->
+<!--            <tooltip>-->
+<!--               <Tooltip text="Debug data state (check console)" />-->
+<!--            </tooltip>-->
+<!--         </Button>-->
+<!--         <Button onAction="#handleDataReset" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 8 15;" text="⚠️ Reset Data">-->
+<!--            <font>-->
+<!--               <Font name="Calibri Bold" size="12.0" />-->
+<!--            </font>-->
+<!--            <tooltip>-->
+<!--               <Tooltip text="Reset all data (Admin only)" />-->
+<!--            </tooltip>-->
+<!--         </Button>-->
+      </HBox>
+   </bottom>
 </BorderPane>
