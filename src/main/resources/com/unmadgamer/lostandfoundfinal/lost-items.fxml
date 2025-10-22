@@ -53,6 +53,7 @@
             <TableColumn fx:id="colLocation" text="Location" prefWidth="120"/>
             <TableColumn fx:id="colDate" text="Date Lost" prefWidth="100"/>
             <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
+            <TableColumn fx:id="colAction" prefWidth="100.0" text="Action" />
          </columns>
          <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

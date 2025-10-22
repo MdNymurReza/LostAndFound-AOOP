@@ -175,4 +175,9 @@ public class UserService {
         System.out.println("Current user: " + (currentUser != null ? currentUser.getUsername() + " (Admin: " + currentUser.isAdmin() + ")" : "None"));
         System.out.println("=== END DEBUG ===");
     }
+
+    public void refreshUsers() {
+        loadUsers();
+        System.out.println("🔄 Users refreshed from JSON file");
+    }
 }

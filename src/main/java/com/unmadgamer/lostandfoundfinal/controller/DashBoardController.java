@@ -60,6 +60,21 @@ public class DashBoardController {
     @FXML
     private Button adminVerificationBtn;
 
+    @FXML
+    private Label pendingClaimsLabel;
+
+    @FXML
+    private Label totalItemsLabel;
+
+    @FXML
+    private Label verifiedItemsLabel;
+
+    @FXML
+    private Label rewardTierLabel;
+
+    @FXML
+    private Label itemsReturnedCountLabel;
+
     private UserService userService;
     private User currentUser;
     private ItemService itemService;
@@ -73,7 +88,7 @@ public class DashBoardController {
         if (currentUser != null) {
             System.out.println("🎯 Dashboard initialized for user: " + currentUser.getUsername());
             loadUserData();
-            loadStatistics();
+            refreshDashboard();
             loadLeaderboard();
             setupAdminFeatures();
 
@@ -102,6 +117,10 @@ public class DashBoardController {
         System.out.println("Total items in system: " + itemService.getAllItems().size());
         System.out.println("Pending verification: " + itemService.getPendingVerificationCount());
         System.out.println("Verified items: " + itemService.getVerifiedItems().size());
+        System.out.println("Pending claims: " + itemService.getPendingClaimItems().size());
+        System.out.println("User reward points: " + currentUser.getRewardPoints());
+        System.out.println("User items returned: " + currentUser.getItemsReturned());
+        System.out.println("User reward tier: " + currentUser.getRewardTier());
         System.out.println("=== END DATA STATE ===");
     }
 
@@ -115,14 +134,24 @@ public class DashBoardController {
             profileImageView.setImage(profileImage);
         } catch (Exception e) {
             System.out.println("ℹ️  Profile image not found, using default");
-            // Set a default image or leave as is
         }
     }
 
     // Public method to refresh statistics (can be called from other controllers)
-    public void refreshStatistics() {
+    public void refreshDashboard() {
         System.out.println("🔄 Refreshing dashboard statistics...");
+
+        // Force refresh from JSON files
+        itemService.refreshItems();
+
+        // Refresh user data to get latest rewards
+        userService.refreshUsers();
+        currentUser = userService.getCurrentUser(); // Update current user reference
+
         loadStatistics();
+        loadLeaderboard();
+        updateAdminStats();
+        updateRewardDisplay();
     }
 
     private void loadStatistics() {
@@ -137,66 +166,90 @@ public class DashBoardController {
                 .filter(item -> item.getReportedBy().equals(currentUsername) && item.getType().equals("found"))
                 .count();
 
-        int returnedCount = (int) itemService.getAllItems().stream()
-                .filter(item -> item.getReportedBy().equals(currentUsername) && "returned".equals(item.getStatus()))
-                .count();
+        // Use actual returned items count from service
+        int returnedCount = itemService.getReturnedItemsByUser(currentUsername).size();
 
-        // Calculate reward points based on user activity
-        int rewardPoints = calculateRewardPoints(currentUsername);
+        // Use actual reward points from user object
+        int rewardPoints = currentUser.getRewardPoints();
 
         lostItemsLabel.setText(String.valueOf(lostCount));
         foundItemsLabel.setText(String.valueOf(foundCount));
         returnedItemsLabel.setText(String.valueOf(returnedCount));
         rewardPointsLabel.setText(String.valueOf(rewardPoints));
 
-        System.out.println("📊 Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount + ", Returned: " + returnedCount + ", Points: " + rewardPoints);
+        System.out.println("📊 Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount +
+                ", Returned: " + returnedCount + ", Points: " + rewardPoints);
+    }
 
-        // Show admin stats if user is admin
-        if (currentUser.isAdmin()) {
-            int pendingVerification = (int) itemService.getPendingVerificationCount();
-            int totalVerified = (int) itemService.getTotalVerifiedCount();
-            System.out.println("👑 Admin stats - Pending verification: " + pendingVerification + ", Total verified: " + totalVerified);
+    private void updateRewardDisplay() {
+        if (currentUser != null) {
+            // Update reward tier
+            if (rewardTierLabel != null) {
+                rewardTierLabel.setText(currentUser.getRewardTier());
+                // Color code the tier
+                switch (currentUser.getRewardTier()) {
+                    case "Platinum":
+                        rewardTierLabel.setStyle("-fx-text-fill: #e5e4e2; -fx-font-weight: bold;");
+                        break;
+                    case "Gold":
+                        rewardTierLabel.setStyle("-fx-text-fill: #ffd700; -fx-font-weight: bold;");
+                        break;
+                    case "Silver":
+                        rewardTierLabel.setStyle("-fx-text-fill: #c0c0c0; -fx-font-weight: bold;");
+                        break;
+                    default:
+                        rewardTierLabel.setStyle("-fx-text-fill: #cd7f32; -fx-font-weight: bold;");
+                }
+            }
+
+            // Update items returned count
+            if (itemsReturnedCountLabel != null) {
+                itemsReturnedCountLabel.setText(String.valueOf(currentUser.getItemsReturned()));
+            }
+
+            System.out.println("🎯 Reward display updated - Points: " + currentUser.getRewardPoints() +
+                    ", Items Returned: " + currentUser.getItemsReturned() +
+                    ", Tier: " + currentUser.getRewardTier());
         }
     }
 
-    private int calculateRewardPoints(String username) {
-        int points = 0;
+    private void updateAdminStats() {
+        if (currentUser.isAdmin()) {
+            int pendingVerification = (int) itemService.getPendingVerificationCount();
+            int totalVerified = (int) itemService.getTotalVerifiedCount();
+            int pendingClaims = (int) itemService.getPendingClaimItems().size();
+            int totalItems = itemService.getAllItems().size();
 
-        // Points for reporting found items
-        long foundItems = itemService.getAllItems().stream()
-                .filter(item -> item.getReportedBy().equals(username) && item.getType().equals("found") && item.isVerified())
-                .count();
-        points += foundItems * 10;
+            // Update labels if they exist
+            if (pendingClaimsLabel != null) {
+                pendingClaimsLabel.setText(String.valueOf(pendingClaims));
+            }
+            if (totalItemsLabel != null) {
+                totalItemsLabel.setText(String.valueOf(totalItems));
+            }
+            if (verifiedItemsLabel != null) {
+                verifiedItemsLabel.setText(String.valueOf(totalVerified));
+            }
 
-        // Points for successful returns (items claimed by others)
-        long returnedItems = itemService.getAllItems().stream()
-                .filter(item -> item.getReportedBy().equals(username) && "returned".equals(item.getStatus()))
-                .count();
-        points += returnedItems * 20;
-
-        // Bonus points for verified items
-        long verifiedItems = itemService.getAllItems().stream()
-                .filter(item -> item.getReportedBy().equals(username) && item.isVerified())
-                .count();
-        points += verifiedItems * 5;
-
-        return points;
+            System.out.println("👑 Admin stats - Pending verification: " + pendingVerification +
+                    ", Total verified: " + totalVerified +
+                    ", Pending claims: " + pendingClaims);
+        }
     }
 
     private void loadLeaderboard() {
         // Simple leaderboard based on reward points
-        // In a real application, you'd calculate this from all users
-        int userPoints = Integer.parseInt(rewardPointsLabel.getText());
+        int userPoints = currentUser.getRewardPoints();
 
         rank1Label.setText("1. " + currentUser.getFirstName() + " " + currentUser.getLastName());
         score1Label.setText(String.valueOf(userPoints));
 
         // For demo purposes, show some sample users
         rank2Label.setText("2. John Smith");
-        score2Label.setText(String.valueOf(userPoints - 10));
+        score2Label.setText(String.valueOf(Math.max(0, userPoints - 10)));
 
         rank3Label.setText("3. Sarah Johnson");
-        score3Label.setText(String.valueOf(userPoints - 20));
+        score3Label.setText(String.valueOf(Math.max(0, userPoints - 20)));
 
         System.out.println("🏆 Leaderboard loaded - User rank: #1 with " + userPoints + " points");
     }
@@ -218,19 +271,19 @@ public class DashBoardController {
     @FXML
     private void handleViewLostItems() {
         System.out.println("Clicked: View Lost Items");
-        openWindow("/com/unmadgamer/lostandfoundfinal/lost-items.fxml", "Lost Items");
+        openWindowWithCallback("/com/unmadgamer/lostandfoundfinal/lost-items.fxml", "Lost Items");
     }
 
     @FXML
     private void handleViewFoundItems() {
         System.out.println("Clicked: View Found Items");
-        openWindow("/com/unmadgamer/lostandfoundfinal/found-items.fxml", "Found Items");
+        openWindowWithCallback("/com/unmadgamer/lostandfoundfinal/found-items.fxml", "Found Items");
     }
 
     @FXML
     private void handleViewReturnedItems() {
         System.out.println("Clicked: View Returned Items");
-        openWindow("/com/unmadgamer/lostandfoundfinal/returned-items.fxml", "Returned Items");
+        openWindowWithCallback("/com/unmadgamer/lostandfoundfinal/returned-items.fxml", "Returned Items");
     }
 
     // UPDATED: Admin Verification Dashboard
@@ -245,6 +298,13 @@ public class DashBoardController {
                 Stage stage = new Stage();
                 stage.setTitle("Admin Verification Dashboard - " + currentUser.getFirstName());
                 stage.setScene(new Scene(root, 1200, 800));
+
+                // Refresh dashboard when admin window closes
+                stage.setOnHidden(event -> {
+                    System.out.println("🔄 Admin verification dashboard closed, refreshing dashboard...");
+                    refreshDashboard();
+                });
+
                 stage.show();
 
                 System.out.println("✅ Admin verification dashboard opened");
@@ -266,9 +326,8 @@ public class DashBoardController {
     @FXML
     private void handleRefreshDashboard() {
         System.out.println("Clicked: Refresh Dashboard");
-        refreshStatistics();
-        loadLeaderboard();
-        showAlert("Refreshed", "Dashboard statistics have been updated!");
+        refreshDashboard();
+        showAlert("Refreshed", "Dashboard statistics have been updated with the latest data!");
     }
 
     @FXML
@@ -288,18 +347,18 @@ public class DashBoardController {
 
         alert.showAndWait().ifPresent(response -> {
             if (response == javafx.scene.control.ButtonType.OK) {
-                // Reset data through JsonDataService
-                itemService.getAllItems().clear(); // Clear in-memory data
-                userService.getAllUsers().removeIf(user -> !user.isAdmin()); // Keep only admin users
+                try {
+                    // Use JsonDataService to reset data properly
+                    com.unmadgamer.lostandfoundfinal.service.JsonDataService jsonDataService =
+                            new com.unmadgamer.lostandfoundfinal.service.JsonDataService();
+                    jsonDataService.resetAllData();
 
-                // Save the reset state
-                com.unmadgamer.lostandfoundfinal.service.JsonDataService jsonDataService =
-                        new com.unmadgamer.lostandfoundfinal.service.JsonDataService();
-                jsonDataService.saveItems(itemService.getAllItems());
-                jsonDataService.saveUsers(userService.getAllUsers());
-
-                showAlert("Data Reset", "All data has been reset successfully");
-                refreshStatistics();
+                    // Refresh the dashboard
+                    refreshDashboard();
+                    showAlert("Data Reset", "All data has been reset successfully");
+                } catch (Exception e) {
+                    showError("Error resetting data: " + e.getMessage());
+                }
             }
         });
     }
@@ -346,43 +405,15 @@ public class DashBoardController {
 
             // Set up a listener for when the window closes
             Stage stage = new Stage();
-            stage.setTitle(title);
+            stage.setTitle(title + " - Lost and Found System");
             stage.setScene(new Scene(root));
 
             // When the form window closes, refresh the dashboard
             stage.setOnHidden(event -> {
-                System.out.println("🔄 Form window closed, refreshing dashboard...");
-                refreshStatistics();
+                System.out.println("🔄 " + title + " window closed, refreshing dashboard...");
+                refreshDashboard();
             });
 
-            stage.show();
-
-            System.out.println("✅ Successfully opened: " + title);
-
-        } catch (Exception e) {
-            System.err.println("❌ Error opening " + title + ": " + e.getMessage());
-            e.printStackTrace();
-            showError("Cannot open " + title + ": " + e.getMessage());
-        }
-    }
-
-    private void openWindow(String fxmlPath, String title) {
-        try {
-            System.out.println("🚪 Attempting to open: " + fxmlPath);
-
-            java.net.URL url = getClass().getResource(fxmlPath);
-            if (url == null) {
-                System.err.println("❌ FXML file not found: " + fxmlPath);
-                showError("Cannot open " + title + ": File not found at " + fxmlPath);
-                return;
-            }
-
-            FXMLLoader loader = new FXMLLoader(url);
-            Parent root = loader.load();
-
-            Stage stage = new Stage();
-            stage.setTitle(title);
-            stage.setScene(new Scene(root));
             stage.show();
 
             System.out.println("✅ Successfully opened: " + title);

@@ -171,23 +171,23 @@ public class LoginController {
         System.out.println("🧪 ADMIN LOGIN TEST - Auto-filled credentials");
         handleLogin();
     }
-
-    @FXML
-    private void handleDemoLogin() {
-        // Quick demo user login for testing
-        usernameTextField.setText("demo");
-        passwordTextField.setText("demo123");
-        handleLogin();
-    }
-
-    @FXML
-    private void testAdminNavigation() {
-        // Force admin navigation test
-        System.out.println("🧪 TESTING ADMIN NAVIGATION DIRECTLY...");
-        usernameTextField.setText("admin");
-        passwordTextField.setText("admin123");
-        handleLogin();
-    }
+//
+//    @FXML
+//    private void handleDemoLogin() {
+//        // Quick demo user login for testing
+//        usernameTextField.setText("demo");
+//        passwordTextField.setText("demo123");
+//        handleLogin();
+//    }
+//
+//    @FXML
+//    private void testAdminNavigation() {
+//        // Force admin navigation test
+//        System.out.println("🧪 TESTING ADMIN NAVIGATION DIRECTLY...");
+//        usernameTextField.setText("admin");
+//        passwordTextField.setText("admin123");
+//        handleLogin();
+//    }
 
     @FXML
     private void emergencyAdminFix() {

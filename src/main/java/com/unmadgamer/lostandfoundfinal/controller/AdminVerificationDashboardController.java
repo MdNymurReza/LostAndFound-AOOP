@@ -28,29 +28,28 @@ public class AdminVerificationDashboardController {
     @FXML private TextField searchField;
     @FXML private ComboBox<String> statusFilter;
     @FXML private ComboBox<String> categoryFilter;
-    @FXML private DatePicker dateFilter;
 
     @FXML private TableView<LostFoundItem> pendingTable;
     @FXML private TableColumn<LostFoundItem, String> colPendingItemName;
     @FXML private TableColumn<LostFoundItem, String> colPendingCategory;
     @FXML private TableColumn<LostFoundItem, String> colPendingDate;
     @FXML private TableColumn<LostFoundItem, String> colPendingReportedBy;
-    @FXML private TableColumn<LostFoundItem, String> colPendingActions;
+    @FXML private TableColumn<LostFoundItem, Void> colPendingActions;
 
     @FXML private TableView<LostFoundItem> recentVerifiedTable;
     @FXML private TableColumn<LostFoundItem, String> colVerifiedItemName;
     @FXML private TableColumn<LostFoundItem, String> colVerifiedCategory;
     @FXML private TableColumn<LostFoundItem, String> colVerifiedDate;
     @FXML private TableColumn<LostFoundItem, String> colVerifiedBy;
-    @FXML private TableColumn<LostFoundItem, String> colVerifiedActions;
+    @FXML private TableColumn<LostFoundItem, Void> colVerifiedActions;
 
-    // NEW: Claims Management Table
+    // Claims Management Table
     @FXML private TableView<LostFoundItem> pendingClaimsTable;
     @FXML private TableColumn<LostFoundItem, String> colClaimItemName;
     @FXML private TableColumn<LostFoundItem, String> colClaimItemType;
     @FXML private TableColumn<LostFoundItem, String> colClaimClaimant;
     @FXML private TableColumn<LostFoundItem, String> colClaimDate;
-    @FXML private TableColumn<LostFoundItem, String> colClaimActions;
+    @FXML private TableColumn<LostFoundItem, Void> colClaimActions;
 
     private ItemService itemService;
     private UserService userService;
@@ -107,7 +106,7 @@ public class AdminVerificationDashboardController {
             }
 
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty) {
                     setGraphic(null);
@@ -134,7 +133,7 @@ public class AdminVerificationDashboardController {
             }
 
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty) {
                     setGraphic(null);
@@ -169,7 +168,7 @@ public class AdminVerificationDashboardController {
         });
 
         colClaimActions.setCellFactory(param -> new TableCell<>() {
-            private final Button approveBtn = new Button("Approve");
+            private final Button approveBtn = new Button("Approve Return");
             private final Button rejectBtn = new Button("Reject");
             private final HBox buttons = new HBox(5, approveBtn, rejectBtn);
 
@@ -189,7 +188,7 @@ public class AdminVerificationDashboardController {
             }
 
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty) {
                     setGraphic(null);
@@ -274,27 +273,59 @@ public class AdminVerificationDashboardController {
         }
     }
 
-    // Claim approval methods
+    // Claim approval methods with REWARD SYSTEM
     private void approveClaim(LostFoundItem item) {
         String adminUsername = userService.getCurrentUser().getUsername();
-        if (itemService.approveClaim(item.getId(), adminUsername)) {
-            showAlert("Success", "Claim approved successfully! Item marked as returned.", Alert.AlertType.INFORMATION);
-            loadData();
-            updateStatistics();
-        } else {
-            showAlert("Error", "Failed to approve claim!", Alert.AlertType.ERROR);
-        }
+
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Confirm Successful Return");
+        confirmation.setHeaderText("Confirm Item Return");
+        confirmation.setContentText("Are you sure this item has been successfully returned to its owner?\n\n" +
+                "Item: " + item.getItemName() + "\n" +
+                "Reward: 50 points will be awarded to the user\n" +
+                "This action cannot be undone.");
+
+        confirmation.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                if (itemService.approveClaim(item.getId(), adminUsername)) {
+                    showAlert("Return Confirmed",
+                            "✅ Item return has been confirmed!\n\n" +
+                                    "🎁 50 reward points have been awarded to the user\n" +
+                                    "📦 Item marked as successfully returned",
+                            Alert.AlertType.INFORMATION);
+                    loadData();
+                    updateStatistics();
+                } else {
+                    showAlert("Error", "Failed to confirm return. Please try again.", Alert.AlertType.ERROR);
+                }
+            }
+        });
     }
 
     private void rejectClaim(LostFoundItem item) {
         String adminUsername = userService.getCurrentUser().getUsername();
-        if (itemService.rejectClaim(item.getId(), adminUsername)) {
-            showAlert("Success", "Claim rejected! Item is available for claim again.", Alert.AlertType.INFORMATION);
-            loadData();
-            updateStatistics();
-        } else {
-            showAlert("Error", "Failed to reject claim!", Alert.AlertType.ERROR);
-        }
+
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Reject Claim");
+        confirmation.setHeaderText("Reject Item Claim");
+        confirmation.setContentText("Are you sure you want to reject this claim?\n\n" +
+                "Item: " + item.getItemName() + "\n" +
+                "The item will become available for claiming again.");
+
+        confirmation.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                if (itemService.rejectClaim(item.getId(), adminUsername)) {
+                    showAlert("Claim Rejected",
+                            "Claim has been rejected successfully!\n\n" +
+                                    "The item is now available for claiming again.",
+                            Alert.AlertType.INFORMATION);
+                    loadData();
+                    updateStatistics();
+                } else {
+                    showAlert("Error", "Failed to reject claim!", Alert.AlertType.ERROR);
+                }
+            }
+        });
     }
 
     private void viewItemDetails(LostFoundItem item) {
@@ -325,6 +356,7 @@ public class AdminVerificationDashboardController {
                 details.append("Claim Status: ").append(lostItem.getClaimStatus()).append("\n");
                 if (lostItem.getClaimStatus().equals("approved")) {
                     details.append("✅ This item has been returned to its owner\n");
+                    details.append("🎁 Reward points have been awarded\n");
                 }
             }
         } else if (item instanceof FoundItem) {
@@ -335,6 +367,7 @@ public class AdminVerificationDashboardController {
                 details.append("Claim Status: ").append(foundItem.getClaimStatus()).append("\n");
                 if (foundItem.getClaimStatus().equals("approved")) {
                     details.append("✅ This item has been returned to its owner\n");
+                    details.append("🎁 Reward points have been awarded\n");
                 }
             }
         }

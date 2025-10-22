@@ -43,22 +43,21 @@ public class LostFormController {
             String currentUser = userService.getCurrentUser().getUsername();
             String formattedDate = lostDatePicker.getValue().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-            // Create lost item using constructor
+            // Create lost item using the correct constructor parameters
             LostItem lostItem = new LostItem(
                     itemNameField.getText().trim(),
                     categoryField.getText().trim(),
                     descriptionField.getText().trim(),
                     locationField.getText().trim(),
-                    formattedDate,
-                    currentUser,
-                    formattedDate,
-                    rewardField.getText().trim(),
-                    contactInfoField.getText().trim()
+                    formattedDate, // date parameter
+                    currentUser,   // reportedBy parameter
+                    formattedDate, // lostDate parameter
+                    rewardField.getText().trim(), // reward parameter
+                    contactInfoField.getText().trim() // contactInfo parameter
             );
 
-            // Set initial status
-            lostItem.setStatus("active");
-            lostItem.setVerificationStatus("pending");
+            // Debug: Print the created item
+            System.out.println("📝 Created LostItem: " + lostItem.toString());
 
             if (itemService.addLostItem(lostItem)) {
                 showSuccess("Lost item reported successfully!\n\nThe item has been added to the lost items list.");

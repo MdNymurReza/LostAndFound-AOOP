@@ -43,22 +43,21 @@ public class FoundFormController {
             String currentUser = userService.getCurrentUser().getUsername();
             String formattedDate = foundDatePicker.getValue().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-            // Create found item using constructor
+            // Create found item using the correct constructor parameters
             FoundItem foundItem = new FoundItem(
                     itemNameField.getText().trim(),
                     categoryField.getText().trim(),
                     descriptionField.getText().trim(),
                     locationField.getText().trim(),
-                    formattedDate,
-                    currentUser,
-                    formattedDate,
-                    storageLocationField.getText().trim(),
-                    contactInfoField.getText().trim()
+                    formattedDate, // date parameter
+                    currentUser,   // reportedBy parameter
+                    formattedDate, // foundDate parameter
+                    storageLocationField.getText().trim(), // storageLocation parameter
+                    contactInfoField.getText().trim() // contactInfo parameter
             );
 
-            // Set initial status
-            foundItem.setStatus("active");
-            foundItem.setVerificationStatus("pending");
+            // Debug: Print the created item
+            System.out.println("📝 Created FoundItem: " + foundItem.toString());
 
             if (itemService.addFoundItem(foundItem)) {
                 showSuccess("Found item reported successfully!\n\nThe item has been submitted for admin verification.");

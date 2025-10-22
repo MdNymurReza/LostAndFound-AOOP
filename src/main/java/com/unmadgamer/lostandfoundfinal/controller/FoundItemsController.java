@@ -12,6 +12,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,6 +27,7 @@ public class FoundItemsController {
     @FXML private TableColumn<LostFoundItem, String> colLocation;
     @FXML private TableColumn<LostFoundItem, String> colDate;
     @FXML private TableColumn<LostFoundItem, String> colStatus;
+    @FXML private TableColumn<LostFoundItem, Void> colAction;
 
     @FXML private TextField searchField;
     @FXML private ComboBox<String> categoryFilter;
@@ -55,9 +57,47 @@ public class FoundItemsController {
         colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
 
+        // Add action column with claim button
+        colAction.setCellFactory(createActionCellFactory());
+
         allItems = FXCollections.observableArrayList();
         filteredItems = FXCollections.observableArrayList();
         itemsTable.setItems(filteredItems);
+    }
+
+    private Callback<TableColumn<LostFoundItem, Void>, TableCell<LostFoundItem, Void>> createActionCellFactory() {
+        return new Callback<TableColumn<LostFoundItem, Void>, TableCell<LostFoundItem, Void>>() {
+            @Override
+            public TableCell<LostFoundItem, Void> call(final TableColumn<LostFoundItem, Void> param) {
+                return new TableCell<LostFoundItem, Void>() {
+                    private final Button claimButton = new Button("Claim");
+
+                    {
+                        claimButton.setOnAction((event) -> {
+                            LostFoundItem item = getTableView().getItems().get(getIndex());
+                            handleClaimItem(item);
+                        });
+                    }
+
+                    @Override
+                    public void updateItem(Void item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty) {
+                            setGraphic(null);
+                        } else {
+                            LostFoundItem currentItem = getTableView().getItems().get(getIndex());
+                            // Only show claim button if item can be claimed
+                            if (currentItem.isVerified() && currentItem.isActive()) {
+                                claimButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+                                setGraphic(claimButton);
+                            } else {
+                                setGraphic(null);
+                            }
+                        }
+                    }
+                };
+            }
+        };
     }
 
     private void setupFilters() {
@@ -72,10 +112,16 @@ public class FoundItemsController {
     }
 
     private void loadItems() {
+        itemService.refreshItems(); // Force refresh from JSON
         List<LostFoundItem> items = itemService.getAvailableFoundItems();
         allItems.setAll(items);
         filteredItems.setAll(items);
         System.out.println("✅ Loaded " + items.size() + " available found items");
+
+        // Debug: Print each item
+        for (LostFoundItem item : items) {
+            System.out.println("   - " + item.getItemName() + " | " + item.getStatus() + " | " + item.getReportedBy());
+        }
     }
 
     private void filterItems() {
@@ -96,6 +142,33 @@ public class FoundItemsController {
     private void updateWelcomeMessage() {
         String username = userService.getCurrentUser().getUsername();
         welcomeLabel.setText("Welcome, " + username + "! Browse found items below.");
+    }
+
+    @FXML
+    private void handleClaimItem(LostFoundItem item) {
+        String currentUser = userService.getCurrentUser().getUsername();
+
+        // Check if user is trying to claim their own item
+        if (item.getReportedBy().equals(currentUser)) {
+            showAlert("Cannot Claim Item", "You cannot claim your own found item.", Alert.AlertType.WARNING);
+            return;
+        }
+
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Claim Item");
+        confirmation.setHeaderText("Claim Found Item");
+        confirmation.setContentText("Are you sure this is your lost item: " + item.getItemName() + "?");
+
+        confirmation.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                if (itemService.claimItem(item.getId(), currentUser)) {
+                    showAlert("Claim Submitted", "Your claim has been submitted for admin approval.", Alert.AlertType.INFORMATION);
+                    loadItems(); // Refresh the list
+                } else {
+                    showAlert("Claim Failed", "Unable to claim this item. It may have been already claimed.", Alert.AlertType.ERROR);
+                }
+            }
+        });
     }
 
     @FXML
@@ -145,7 +218,7 @@ public class FoundItemsController {
 
             Stage dashboardStage = new Stage();
             dashboardStage.setTitle("Dashboard - Lost and Found System");
-            dashboardStage.setScene(new Scene(root, 600, 400));
+            dashboardStage.setScene(new Scene(root, 800, 600));
             dashboardStage.show();
         } catch (IOException e) {
             showAlert("Navigation Error", "Cannot open dashboard: " + e.getMessage(), Alert.AlertType.ERROR);
