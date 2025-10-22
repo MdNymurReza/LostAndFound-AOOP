@@ -2,6 +2,7 @@ package com.unmadgamer.lostandfoundfinal.model;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 public abstract class LostFoundItem {
     protected String id;
@@ -11,18 +12,31 @@ public abstract class LostFoundItem {
     protected String location;
     protected String date;
     protected String reportedBy;
-    protected String status; // "pending", "verified", "rejected", "claimed", "returned"
+    protected String status; // "active", "returned", "expired"
     protected String verificationStatus; // "pending", "verified", "rejected"
     protected String verifiedBy;
     protected String verificationDate;
     protected String createdAt;
-    protected String imagePath;
-    protected String contactInfo;
+
+    // Abstract method to get item type
+    public abstract String getType();
 
     public LostFoundItem() {
-        this.createdAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        this.status = "pending";
+        this.id = UUID.randomUUID().toString();
+        this.status = "active";
         this.verificationStatus = "pending";
+        this.createdAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    public LostFoundItem(String itemName, String category, String description, String location,
+                         String date, String reportedBy) {
+        this();
+        this.itemName = itemName;
+        this.category = category;
+        this.description = description;
+        this.location = location;
+        this.date = date;
+        this.reportedBy = reportedBy;
     }
 
     // Getters and Setters
@@ -62,13 +76,7 @@ public abstract class LostFoundItem {
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 
-    public String getImagePath() { return imagePath; }
-    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
-
-    public String getContactInfo() { return contactInfo; }
-    public void setContactInfo(String contactInfo) { this.contactInfo = contactInfo; }
-
-    // Verification methods
+    // Business logic methods
     public boolean isVerified() {
         return "verified".equals(verificationStatus);
     }
@@ -81,19 +89,19 @@ public abstract class LostFoundItem {
         return "rejected".equals(verificationStatus);
     }
 
-    public void verify(String adminUsername) {
-        this.verificationStatus = "verified";
-        this.verifiedBy = adminUsername;
-        this.verificationDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        this.status = "verified";
+    public boolean isActive() {
+        return "active".equals(status);
     }
 
-    public void reject(String adminUsername) {
-        this.verificationStatus = "rejected";
-        this.verifiedBy = adminUsername;
-        this.verificationDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        this.status = "rejected";
+    public boolean isReturned() {
+        return "returned".equals(status);
     }
 
-    public abstract String getType();
+    @Override
+    public String toString() {
+        return String.format(
+                "LostFoundItem{id='%s', itemName='%s', category='%s', type='%s', status='%s', verificationStatus='%s', reportedBy='%s'}",
+                id, itemName, category, getType(), status, verificationStatus, reportedBy
+        );
+    }
 }

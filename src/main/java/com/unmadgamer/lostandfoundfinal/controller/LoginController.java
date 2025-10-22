@@ -311,7 +311,7 @@ public class LoginController {
                 dashboardStage.setScene(new Scene(root, 1200, 800)); // Larger for admin
                 System.out.println("✅ Setting up ADMIN dashboard window (1200x800)");
             } else {
-                dashboardStage.setScene(new Scene(root, 800, 600)); // Regular size for users
+                dashboardStage.setScene(new Scene(root, 600, 400)); // Regular size for users
                 System.out.println("✅ Setting up REGULAR USER dashboard window (800x600)");
             }
 

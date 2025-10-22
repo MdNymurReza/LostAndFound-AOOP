@@ -67,38 +67,38 @@
             </Label>
 
             <!-- Test Buttons -->
-            <Button layoutX="27.0" layoutY="330.0" mnemonicParsing="false" onAction="#handleAdminLogin" prefHeight="25.0" prefWidth="120.0" style="-fx-background-color: #ff6b6b; -fx-text-fill: white;" text="Test Admin Login">
-                <font>
-                    <Font name="Arial Rounded MT Bold" size="10.0" />
-                </font>
-                <tooltip>
-                    <Tooltip text="Auto-fill admin credentials and login" />
-                </tooltip>
-            </Button>
-            <Button layoutX="152.0" layoutY="330.0" mnemonicParsing="false" onAction="#testAdminNavigation" prefHeight="25.0" prefWidth="120.0" style="-fx-background-color: #4ecdc4; -fx-text-fill: white;" text="Test Navigation">
-                <font>
-                    <Font name="Arial Rounded MT Bold" size="10.0" />
-                </font>
-                <tooltip>
-                    <Tooltip text="Test admin navigation directly" />
-                </tooltip>
-            </Button>
-            <Button layoutX="27.0" layoutY="360.0" mnemonicParsing="false" onAction="#emergencyAdminFix" prefHeight="25.0" prefWidth="120.0" style="-fx-background-color: #ff9ff3; -fx-text-fill: white;" text="Emergency Admin Fix">
-                <font>
-                    <Font name="Arial Rounded MT Bold" size="10.0" />
-                </font>
-                <tooltip>
-                    <Tooltip text="Use this if admin login is not working - creates fresh admin user" />
-                </tooltip>
-            </Button>
-            <Button layoutX="152.0" layoutY="360.0" mnemonicParsing="false" onAction="#handleDemoLogin" prefHeight="25.0" prefWidth="120.0" style="-fx-background-color: #feca57; -fx-text-fill: white;" text="Demo User Login">
-                <font>
-                    <Font name="Arial Rounded MT Bold" size="10.0" />
-                </font>
-                <tooltip>
-                    <Tooltip text="Auto-fill demo user credentials" />
-                </tooltip>
-            </Button>
+<!--            <Button layoutX="27.0" layoutY="330.0" mnemonicParsing="false" onAction="#handleAdminLogin" prefHeight="25.0" prefWidth="120.0" style="-fx-background-color: #ff6b6b; -fx-text-fill: white;" text="Test Admin Login">-->
+<!--                <font>-->
+<!--                    <Font name="Arial Rounded MT Bold" size="10.0" />-->
+<!--                </font>-->
+<!--                <tooltip>-->
+<!--                    <Tooltip text="Auto-fill admin credentials and login" />-->
+<!--                </tooltip>-->
+<!--            </Button>-->
+<!--            <Button layoutX="152.0" layoutY="330.0" mnemonicParsing="false" onAction="#testAdminNavigation" prefHeight="25.0" prefWidth="120.0" style="-fx-background-color: #4ecdc4; -fx-text-fill: white;" text="Test Navigation">-->
+<!--                <font>-->
+<!--                    <Font name="Arial Rounded MT Bold" size="10.0" />-->
+<!--                </font>-->
+<!--                <tooltip>-->
+<!--                    <Tooltip text="Test admin navigation directly" />-->
+<!--                </tooltip>-->
+<!--            </Button>-->
+<!--            <Button layoutX="27.0" layoutY="360.0" mnemonicParsing="false" onAction="#emergencyAdminFix" prefHeight="25.0" prefWidth="120.0" style="-fx-background-color: #ff9ff3; -fx-text-fill: white;" text="Emergency Admin Fix">-->
+<!--                <font>-->
+<!--                    <Font name="Arial Rounded MT Bold" size="10.0" />-->
+<!--                </font>-->
+<!--                <tooltip>-->
+<!--                    <Tooltip text="Use this if admin login is not working - creates fresh admin user" />-->
+<!--                </tooltip>-->
+<!--            </Button>-->
+<!--            <Button layoutX="152.0" layoutY="360.0" mnemonicParsing="false" onAction="#handleDemoLogin" prefHeight="25.0" prefWidth="120.0" style="-fx-background-color: #feca57; -fx-text-fill: white;" text="Demo User Login">-->
+<!--                <font>-->
+<!--                    <Font name="Arial Rounded MT Bold" size="10.0" />-->
+<!--                </font>-->
+<!--                <tooltip>-->
+<!--                    <Tooltip text="Auto-fill demo user credentials" />-->
+<!--                </tooltip>-->
+<!--            </Button>-->
         </AnchorPane>
     </center>
 </BorderPane>

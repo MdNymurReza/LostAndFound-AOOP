@@ -238,9 +238,9 @@ public class JsonDataService {
                 }
             } else {
                 // Fallback: try to determine type based on available fields
-                if (node.has("lostDate") || node.has("reward")) {
+                if (node.has("lostDate") || node.has("reward") || node.has("claimedFoundItemId")) {
                     return objectMapper.treeToValue(node, LostItem.class);
-                } else if (node.has("foundDate") || node.has("storageLocation")) {
+                } else if (node.has("foundDate") || node.has("storageLocation") || node.has("claimedBy")) {
                     return objectMapper.treeToValue(node, FoundItem.class);
                 } else {
                     // Default to base class if type cannot be determined
@@ -300,7 +300,7 @@ public class JsonDataService {
         }
     }
 
-    // Attempt to recover item data from corrupted JSON
+    // Attempt to recover item data from corrupted JSON - FIXED VERSION
     private List<LostFoundItem> attemptItemDataRecovery(String corruptedJson) {
         List<LostFoundItem> recoveredItems = new ArrayList<>();
 
@@ -371,11 +371,12 @@ public class JsonDataService {
                             lostItem.setLostDate(extractValue(trimmed));
                         } else if (trimmed.contains("\"reward\"")) {
                             lostItem.setReward(extractValue(trimmed));
-                        } else if (trimmed.contains("\"claimedBy\"")) {
-                            lostItem.setClaimedBy(extractValue(trimmed));
+                        } else if (trimmed.contains("\"claimedFoundItemId\"")) {
+                            lostItem.setClaimedFoundItemId(extractValue(trimmed));
                         } else if (trimmed.contains("\"claimStatus\"")) {
                             lostItem.setClaimStatus(extractValue(trimmed));
                         }
+                        // Removed setClaimedBy - LostItem doesn't have this method
                     } else if (currentItem instanceof FoundItem) {
                         FoundItem foundItem = (FoundItem) currentItem;
                         if (trimmed.contains("\"foundDate\"")) {

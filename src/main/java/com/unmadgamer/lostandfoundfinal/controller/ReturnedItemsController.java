@@ -3,494 +3,298 @@ package com.unmadgamer.lostandfoundfinal.controller;
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
 import com.unmadgamer.lostandfoundfinal.model.LostItem;
 import com.unmadgamer.lostandfoundfinal.model.FoundItem;
-import com.unmadgamer.lostandfoundfinal.model.User;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ReturnedItemsController {
 
-    @FXML private VBox itemsContainer;
-    @FXML private Label totalItemsLabel;
-    @FXML private Label subtitleLabel;
+    @FXML private TableView<LostFoundItem> returnedTable;
+    @FXML private TableColumn<LostFoundItem, String> colItemName;
+    @FXML private TableColumn<LostFoundItem, String> colCategory;
+    @FXML private TableColumn<LostFoundItem, String> colType;
+    @FXML private TableColumn<LostFoundItem, String> colReturnedTo;
+    @FXML private TableColumn<LostFoundItem, String> colReturnedBy;
+    @FXML private TableColumn<LostFoundItem, String> colDate;
+    @FXML private TableColumn<LostFoundItem, String> colActions;
+
     @FXML private TextField searchField;
-    @FXML private ComboBox<String> filterCombo;
+    @FXML private ComboBox<String> typeFilter;
+    @FXML private ComboBox<String> categoryFilter;
+    @FXML private Label statsLabel;
 
     private ItemService itemService;
     private UserService userService;
-    private List<LostFoundItem> allReturnedItems;
+    private ObservableList<LostFoundItem> returnedItems;
 
     @FXML
     public void initialize() {
-        System.out.println("🔄 Initializing ReturnedItemsController...");
-
         itemService = ItemService.getInstance();
         userService = UserService.getInstance();
 
-        setupEventHandlers();
+        initializeTable();
+        setupFilters();
         loadReturnedItems();
-
-        if (userService.getCurrentUser() != null) {
-            User currentUser = userService.getCurrentUser();
-            subtitleLabel.setText("Welcome, " + currentUser.getFirstName() + " 🏆 " + currentUser.getRewardTier());
-        }
-
-        System.out.println("✅ ReturnedItemsController initialized");
+        updateStatistics();
     }
 
-    private void setupEventHandlers() {
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> filterItems());
-        filterCombo.valueProperty().addListener((observable, oldValue, newValue) -> filterItems());
+    private void initializeTable() {
+        colItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
+        colCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
+        colType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
 
-        // Initialize filter combo
-        filterCombo.getItems().addAll("All Items", "Verified Only", "Pending Verification", "With Rewards");
-        filterCombo.setValue("All Items");
-    }
-
-    private void loadReturnedItems() {
-        try {
-            // Get all items with "returned" or "claimed" status
-            allReturnedItems = itemService.getAllItems().stream()
-                    .filter(item -> item != null &&
-                            ("returned".equals(item.getStatus()) || "claimed".equals(item.getStatus())))
-                    .collect(Collectors.toList());
-
-            System.out.println("📋 Loaded " + allReturnedItems.size() + " returned items");
-
-            updateStatistics();
-            displayItems(allReturnedItems);
-
-        } catch (Exception e) {
-            System.err.println("❌ Error loading returned items: " + e.getMessage());
-            e.printStackTrace();
-            allReturnedItems = List.of(); // Ensure it's never null
-            showError("Error loading returned items: " + e.getMessage());
-        }
-    }
-
-    private void updateStatistics() {
-        totalItemsLabel.setText(String.valueOf(allReturnedItems.size()));
-    }
-
-    private void displayItems(List<LostFoundItem> items) {
-        itemsContainer.getChildren().clear();
-
-        if (items == null || items.isEmpty()) {
-            Label noItemsLabel = new Label("No returned items found");
-            noItemsLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 16px; -fx-padding: 40px;");
-            itemsContainer.getChildren().add(noItemsLabel);
-            return;
-        }
-
-        for (LostFoundItem item : items) {
-            itemsContainer.getChildren().add(createItemCard(item));
-        }
-    }
-
-    private VBox createItemCard(LostFoundItem item) {
-        VBox card = new VBox();
-        card.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8; -fx-background-radius: 8;");
-        card.setSpacing(10);
-        card.setPadding(new Insets(20));
-        card.setMaxWidth(Double.MAX_VALUE);
-
-        // Header with item name and status
-        HBox header = new HBox();
-        header.setSpacing(10);
-        header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-
-        Label nameLabel = new Label(item.getItemName());
-        nameLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
-
-        // Status badge
-        String status = item.getStatus();
-        Label statusBadge = new Label(status != null ? status.toUpperCase() : "UNKNOWN");
-        statusBadge.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 4 8; -fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 12;");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        // Reward indicator - Check if this item had a reward
-        boolean hasReward = false;
-        if (item instanceof LostItem) {
-            LostItem lostItem = (LostItem) item;
-            hasReward = lostItem.getReward() != null && !lostItem.getReward().isEmpty();
-        }
-
-        if (hasReward) {
-            Label rewardLabel = new Label("🎁 REWARD");
-            rewardLabel.setStyle("-fx-text-fill: #e67e22; -fx-font-size: 12px; -fx-font-weight: bold;");
-            header.getChildren().add(rewardLabel);
-        }
-
-        // Verification badge
-        Label verificationBadge = new Label(item.isVerified() ? "✓ VERIFIED" : "⏳ PENDING");
-        verificationBadge.setStyle("-fx-text-fill: " +
-                (item.isVerified() ? "#27ae60" : "#e67e22") +
-                "; -fx-font-size: 12px; -fx-font-weight: bold;");
-
-        header.getChildren().addAll(nameLabel, statusBadge, spacer, verificationBadge);
-
-        // Item details
-        Label categoryLabel = new Label("Category: " + item.getCategory());
-        categoryLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
-
-        Label descLabel = new Label(item.getDescription());
-        descLabel.setStyle("-fx-text-fill: #2c3e50; -fx-font-size: 14px;");
-        descLabel.setWrapText(true);
-        descLabel.setMaxWidth(Double.MAX_VALUE);
-
-        // Reward information if available
-        if (item instanceof LostItem) {
-            LostItem lostItem = (LostItem) item;
-            if (lostItem.getReward() != null && !lostItem.getReward().isEmpty()) {
-                Label rewardInfoLabel = new Label("💰 Reward Offered: " + lostItem.getReward());
-                rewardInfoLabel.setStyle("-fx-text-fill: #e67e22; -fx-font-size: 13px; -fx-font-weight: bold;");
-                card.getChildren().add(rewardInfoLabel);
-            }
-        }
-
-        // Footer with location, date and actions
-        HBox footer = new HBox();
-        footer.setSpacing(15);
-        footer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-
-        Label locationLabel = new Label("📍 " + item.getLocation());
-        locationLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 13px;");
-
-        Label dateLabel = new Label("📅 " + item.getDate());
-        dateLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 13px;");
-
-        // Show who verified the item if available
-        if (item.getVerifiedBy() != null) {
-            Label verifiedByLabel = new Label("✅ Verified by: " + item.getVerifiedBy());
-            verifiedByLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 13px; -fx-font-weight: bold;");
-            footer.getChildren().add(verifiedByLabel);
-        }
-
-        // Show who reported the item
-        Label reportedByLabel = new Label("👤 Reported by: " + item.getReportedBy());
-        reportedByLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 13px;");
-        footer.getChildren().add(reportedByLabel);
-
-        Region footerSpacer = new Region();
-        HBox.setHgrow(footerSpacer, Priority.ALWAYS);
-
-        Button viewDetailsBtn = new Button("View Details");
-        viewDetailsBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16;");
-        viewDetailsBtn.setOnAction(e -> showItemDetails(item));
-
-        // Add "My Rewards" button for user's own returned items
-        HBox actionButtons = new HBox(10);
-        actionButtons.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
-
-        User currentUser = userService.getCurrentUser();
-        if (currentUser != null && item.getReportedBy().equals(currentUser.getUsername())) {
-            Button rewardsBtn = new Button("My Rewards");
-            rewardsBtn.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16;");
-            rewardsBtn.setOnAction(e -> showUserRewards(item));
-            actionButtons.getChildren().add(rewardsBtn);
-        }
-
-        // Add admin actions if user is admin and item is not verified
-        if (currentUser != null && currentUser.isAdmin() && !item.isVerified()) {
-            Button verifyBtn = new Button("Verify Return");
-            verifyBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16;");
-            verifyBtn.setOnAction(e -> verifyItem(item));
-            actionButtons.getChildren().add(verifyBtn);
-        }
-
-        actionButtons.getChildren().add(viewDetailsBtn);
-        footer.getChildren().addAll(locationLabel, dateLabel, footerSpacer, actionButtons);
-
-        card.getChildren().addAll(header, categoryLabel, descLabel, footer);
-        return card;
-    }
-
-    private void verifyItem(LostFoundItem item) {
-        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmAlert.setTitle("Confirm Verification");
-        confirmAlert.setHeaderText("Verify Returned Item: " + item.getItemName());
-        confirmAlert.setContentText("Are you sure you want to verify this returned item?");
-
-        confirmAlert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                boolean success = itemService.verifyItem(item.getId(), userService.getCurrentUser().getUsername());
-                if (success) {
-                    showAlert("Success", "Returned item has been verified successfully!");
-                    loadReturnedItems(); // Refresh the list
+        // Custom cell factories for returned to and returned by
+        colReturnedTo.setCellFactory(param -> new TableCell<LostFoundItem, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
                 } else {
-                    showError("Failed to verify returned item");
+                    LostFoundItem lostFoundItem = getTableView().getItems().get(getIndex());
+                    if (lostFoundItem instanceof LostItem) {
+                        LostItem lostItem = (LostItem) lostFoundItem;
+                        setText(lostItem.getClaimedBy() != null ? lostItem.getClaimedBy() : "N/A");
+                    } else if (lostFoundItem instanceof FoundItem) {
+                        FoundItem foundItem = (FoundItem) lostFoundItem;
+                        setText(foundItem.getReportedBy() != null ? foundItem.getReportedBy() : "N/A");
+                    } else {
+                        setText("N/A");
+                    }
                 }
             }
         });
+
+        colReturnedBy.setCellFactory(param -> new TableCell<LostFoundItem, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    LostFoundItem lostFoundItem = getTableView().getItems().get(getIndex());
+                    if (lostFoundItem instanceof LostItem) {
+                        setText(lostFoundItem.getReportedBy());
+                    } else if (lostFoundItem instanceof FoundItem) {
+                        FoundItem foundItem = (FoundItem) lostFoundItem;
+                        setText(foundItem.getClaimedBy() != null ? foundItem.getClaimedBy() : "N/A");
+                    } else {
+                        setText("N/A");
+                    }
+                }
+            }
+        });
+
+        // Actions column
+        colActions.setCellFactory(param -> new TableCell<LostFoundItem, String>() {
+            private final Button viewBtn = new Button("View Details");
+            {
+                viewBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold;");
+                viewBtn.setOnAction(event -> {
+                    LostFoundItem item = getTableView().getItems().get(getIndex());
+                    showItemDetails(item);
+                });
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(viewBtn);
+                }
+            }
+        });
+
+        returnedItems = FXCollections.observableArrayList();
+        returnedTable.setItems(returnedItems);
     }
 
-    private void showUserRewards(LostFoundItem item) {
-        User currentUser = userService.getCurrentUser();
-        StringBuilder rewardsInfo = new StringBuilder();
-        rewardsInfo.append("=== YOUR REWARD FOR RETURNED ITEM ===\n\n");
-        rewardsInfo.append("Item: ").append(item.getItemName()).append("\n");
-        rewardsInfo.append("Category: ").append(item.getCategory()).append("\n");
-        rewardsInfo.append("Status: RETURNED 🎉\n\n");
+    private void setupFilters() {
+        typeFilter.setItems(FXCollections.observableArrayList(
+                "All", "Lost", "Found"
+        ));
+        typeFilter.setValue("All");
 
-        rewardsInfo.append("=== REWARD INFORMATION ===\n");
-        rewardsInfo.append("💎 Your Current Tier: ").append(currentUser.getRewardTier()).append("\n");
-        rewardsInfo.append("🏆 Your Points: ").append(currentUser.getRewardPoints()).append("\n");
-        rewardsInfo.append("📦 Your Returned Items: ").append(currentUser.getItemsReturned()).append("\n\n");
+        categoryFilter.setItems(FXCollections.observableArrayList(
+                "All", "Electronics", "Documents", "Clothing", "Accessories", "Other"
+        ));
+        categoryFilter.setValue("All");
 
-        // Show reward if this was a lost item with reward
-        if (item instanceof LostItem) {
-            LostItem lostItem = (LostItem) item;
-            if (lostItem.getReward() != null && !lostItem.getReward().isEmpty()) {
-                rewardsInfo.append("💰 You offered a reward: ").append(lostItem.getReward()).append("\n");
-                rewardsInfo.append("🎁 This helped motivate someone to return your item!\n\n");
-            }
-        }
+        // Search functionality
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> filterItems());
+        typeFilter.valueProperty().addListener((observable, oldValue, newValue) -> filterItems());
+        categoryFilter.valueProperty().addListener((observable, oldValue, newValue) -> filterItems());
+    }
 
-        rewardsInfo.append("=== TIER BENEFITS ===\n");
-        rewardsInfo.append(currentUser.getTierBenefits()).append("\n\n");
+    private void loadReturnedItems() {
+        // Get all returned items (both lost and found)
+        List<LostFoundItem> returnedLostItems = itemService.getLostItems().stream()
+                .filter(item -> "returned".equals(item.getStatus()) || "claimed".equals(item.getStatus()))
+                .collect(Collectors.toList());
 
-        rewardsInfo.append("Thank you for being a valued member of our community! 🚀");
+        List<LostFoundItem> returnedFoundItems = itemService.getFoundItems().stream()
+                .filter(item -> "returned".equals(item.getStatus()) || "claimed".equals(item.getStatus()))
+                .collect(Collectors.toList());
 
-        TextArea textArea = new TextArea(rewardsInfo.toString());
-        textArea.setEditable(false);
-        textArea.setWrapText(true);
-        textArea.setPrefSize(500, 500);
+        returnedItems.setAll(returnedLostItems);
+        returnedItems.addAll(returnedFoundItems);
 
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Your Rewards");
-        alert.setHeaderText("Reward Profile - " + currentUser.getRewardTier() + " Tier");
-        alert.getDialogPane().setContent(textArea);
-        alert.showAndWait();
+        System.out.println("✅ Loaded " + returnedItems.size() + " returned items");
     }
 
     private void filterItems() {
-        if (allReturnedItems == null) {
-            return;
-        }
-
         String searchText = searchField.getText().toLowerCase();
-        String filterValue = filterCombo.getValue();
+        String type = typeFilter.getValue();
+        String category = categoryFilter.getValue();
 
-        List<LostFoundItem> filteredItems = allReturnedItems.stream()
-                .filter(item -> item != null && (
+        List<LostFoundItem> filtered = returnedItems.stream()
+                .filter(item ->
                         item.getItemName().toLowerCase().contains(searchText) ||
-                                item.getDescription().toLowerCase().contains(searchText) ||
-                                item.getCategory().toLowerCase().contains(searchText) ||
-                                item.getLocation().toLowerCase().contains(searchText) ||
-                                (item.getVerifiedBy() != null && item.getVerifiedBy().toLowerCase().contains(searchText)) ||
-                                item.getReportedBy().toLowerCase().contains(searchText)
-                ))
+                                item.getDescription().toLowerCase().contains(searchText))
                 .filter(item -> {
-                    if (filterValue == null || "All Items".equals(filterValue)) {
-                        return true;
-                    } else if ("Verified Only".equals(filterValue)) {
-                        return item.isVerified();
-                    } else if ("Pending Verification".equals(filterValue)) {
-                        return !item.isVerified();
-                    } else if ("With Rewards".equals(filterValue)) {
-                        if (item instanceof LostItem) {
-                            LostItem lostItem = (LostItem) item;
-                            return lostItem.getReward() != null && !lostItem.getReward().isEmpty();
-                        }
-                        return false;
-                    }
+                    if ("All".equals(type)) return true;
+                    if ("Lost".equals(type)) return item instanceof LostItem;
+                    if ("Found".equals(type)) return item instanceof FoundItem;
                     return true;
                 })
+                .filter(item -> category.equals("All") || item.getCategory().equals(category))
                 .collect(Collectors.toList());
 
-        displayItems(filteredItems);
+        returnedTable.setItems(FXCollections.observableArrayList(filtered));
+    }
+
+    private void updateStatistics() {
+        int totalReturned = returnedItems.size();
+        long lostReturned = returnedItems.stream().filter(item -> item instanceof LostItem).count();
+        long foundReturned = returnedItems.stream().filter(item -> item instanceof FoundItem).count();
+
+        statsLabel.setText(String.format("📊 Statistics: %d Total Returned (%d Lost, %d Found)",
+                totalReturned, lostReturned, foundReturned));
     }
 
     private void showItemDetails(LostFoundItem item) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Item Details");
+        alert.setHeaderText(item.getItemName());
+
         StringBuilder details = new StringBuilder();
-        details.append("=== RETURNED ITEM DETAILS ===\n\n");
-        details.append("Item Name: ").append(item.getItemName()).append("\n");
+        details.append("Type: ").append(item.getType()).append("\n");
         details.append("Category: ").append(item.getCategory()).append("\n");
         details.append("Description: ").append(item.getDescription()).append("\n");
         details.append("Location: ").append(item.getLocation()).append("\n");
         details.append("Date: ").append(item.getDate()).append("\n");
-        details.append("Reported By: ").append(item.getReportedBy()).append("\n");
-        details.append("Contact Info: ").append(item.getContactInfo() != null ? item.getContactInfo() : "Not provided").append("\n");
-        details.append("Item ID: ").append(item.getId()).append("\n\n");
+        details.append("Status: ").append(item.getStatus()).append("\n");
+        details.append("Verification: ").append(item.getVerificationStatus()).append("\n");
 
-        // Reward information
+        // Add type-specific details
         if (item instanceof LostItem) {
             LostItem lostItem = (LostItem) item;
-            if (lostItem.getReward() != null && !lostItem.getReward().isEmpty()) {
-                details.append("💰 Reward Offered: ").append(lostItem.getReward()).append("\n");
+            details.append("\n=== LOST ITEM DETAILS ===\n");
+            details.append("Lost Date: ").append(lostItem.getLostDate()).append("\n");
+            details.append("Reward: ").append(lostItem.getReward() != null ? lostItem.getReward() : "Not specified").append("\n");
+            details.append("Contact Info: ").append(lostItem.getContactInfo() != null ? lostItem.getContactInfo() : "N/A").append("\n");
+            details.append("Reported By: ").append(lostItem.getReportedBy()).append("\n");
+
+            if (lostItem.getClaimedBy() != null) {
+                details.append("Returned To: ").append(lostItem.getClaimedBy()).append("\n");
+                details.append("Claim Status: ").append(lostItem.getClaimStatus()).append("\n");
+            }
+        } else if (item instanceof FoundItem) {
+            FoundItem foundItem = (FoundItem) item;
+            details.append("\n=== FOUND ITEM DETAILS ===\n");
+            details.append("Found Date: ").append(foundItem.getFoundDate()).append("\n");
+            details.append("Storage Location: ").append(foundItem.getStorageLocation()).append("\n");
+            details.append("Contact Info: ").append(foundItem.getContactInfo() != null ? foundItem.getContactInfo() : "N/A").append("\n");
+            details.append("Found By: ").append(foundItem.getReportedBy()).append("\n");
+
+            if (foundItem.getClaimedBy() != null) {
+                details.append("Claimed By: ").append(foundItem.getClaimedBy()).append("\n");
+                details.append("Claim Status: ").append(foundItem.getClaimStatus()).append("\n");
             }
         }
 
-        details.append("=== VERIFICATION STATUS ===\n");
         if (item.isVerified()) {
-            details.append("✅ VERIFIED\n");
-            details.append("Verified By: ").append(item.getVerifiedBy()).append("\n");
+            details.append("\nVerified By: ").append(item.getVerifiedBy()).append("\n");
             details.append("Verification Date: ").append(item.getVerificationDate()).append("\n");
-        } else {
-            details.append("⏳ PENDING VERIFICATION\n");
-            details.append("This returned item is waiting for admin verification.\n");
         }
 
-        details.append("\n=== RETURN INFORMATION ===\n");
-        details.append("Status: ").append(item.getStatus()).append("\n");
-        details.append("Item Type: ").append(item.getType()).append("\n");
-
-        // Claim information
-        String claimedBy = getClaimedBy(item);
-        if (claimedBy != null) {
-            details.append("Claimed/Returned by: ").append(claimedBy).append("\n");
-        }
-
-        details.append("This item has been successfully returned to its owner.");
-
-        TextArea textArea = new TextArea(details.toString());
-        textArea.setEditable(false);
-        textArea.setWrapText(true);
-        textArea.setPrefSize(500, 400);
-
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Returned Item Details");
-        alert.setHeaderText("Returned Item: " + item.getItemName());
-        alert.getDialogPane().setContent(textArea);
+        alert.setContentText(details.toString());
+        alert.setResizable(true);
+        alert.getDialogPane().setPrefSize(400, 500);
         alert.showAndWait();
-    }
-
-    private String getClaimedBy(LostFoundItem item) {
-        if (item instanceof LostItem) {
-            return ((LostItem) item).getClaimedBy();
-        } else if (item instanceof FoundItem) {
-            return ((FoundItem) item).getClaimedBy();
-        }
-        return null;
     }
 
     @FXML
     private void handleRefresh() {
         loadReturnedItems();
-        showAlert("Refreshed", "Returned items list has been updated.");
+        updateStatistics();
+        showAlert("Refreshed", "Returned items list has been updated.", Alert.AlertType.INFORMATION);
+    }
+
+    @FXML
+    private void handleSearch() {
+        filterItems();
+    }
+
+    @FXML
+    private void handleClearFilters() {
+        searchField.clear();
+        typeFilter.setValue("All");
+        categoryFilter.setValue("All");
+        returnedTable.setItems(returnedItems);
     }
 
     @FXML
     private void handleBackToDashboard() {
-        closeWindow();
-    }
+        try {
+            Stage currentStage = (Stage) returnedTable.getScene().getWindow();
+            currentStage.close();
 
-    @FXML
-    private void handleViewMyRewards() {
-        User currentUser = userService.getCurrentUser();
-        if (currentUser == null) return;
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/dashboard.fxml"));
+            Parent root = loader.load();
 
-        // Get user's returned items
-        List<LostFoundItem> userReturnedItems = itemService.getReturnedItemsForUser(currentUser.getUsername());
-
-        StringBuilder rewardsInfo = new StringBuilder();
-        rewardsInfo.append("=== YOUR REWARDS PROFILE ===\n\n");
-        rewardsInfo.append("👤 User: ").append(currentUser.getFirstName()).append(" ").append(currentUser.getLastName()).append("\n");
-        rewardsInfo.append("💎 Tier: ").append(currentUser.getRewardTier()).append("\n");
-        rewardsInfo.append("🏆 Points: ").append(currentUser.getRewardPoints()).append("\n");
-        rewardsInfo.append("📦 Items Returned: ").append(userReturnedItems.size()).append("\n\n");
-
-        rewardsInfo.append("=== YOUR RETURNED ITEMS ===\n");
-        if (userReturnedItems.isEmpty()) {
-            rewardsInfo.append("No returned items yet. Keep participating!\n");
-        } else {
-            for (LostFoundItem item : userReturnedItems) {
-                rewardsInfo.append("• ").append(item.getItemName());
-                if (item instanceof LostItem) {
-                    LostItem lostItem = (LostItem) item;
-                    if (lostItem.getReward() != null && !lostItem.getReward().isEmpty()) {
-                        rewardsInfo.append(" (With Reward: ").append(lostItem.getReward()).append(")");
-                    }
-                }
-                rewardsInfo.append("\n");
-            }
+            Stage dashboardStage = new Stage();
+            dashboardStage.setTitle("Dashboard - Lost and Found System");
+            dashboardStage.setScene(new Scene(root, 600, 400));
+            dashboardStage.show();
+        } catch (IOException e) {
+            showAlert("Navigation Error", "Cannot open dashboard: " + e.getMessage(), Alert.AlertType.ERROR);
         }
-
-        rewardsInfo.append("\n=== TIER BENEFITS ===\n");
-        rewardsInfo.append(currentUser.getTierBenefits()).append("\n\n");
-
-        rewardsInfo.append("=== HOW TO EARN MORE POINTS ===\n");
-        rewardsInfo.append("• Report lost items with rewards: +25 bonus points\n");
-        rewardsInfo.append("• Have your lost items returned: 50-150 random points\n");
-        rewardsInfo.append("• Return found items to owners: 50-150 random points\n");
-        rewardsInfo.append("• Active participation: Various bonus opportunities\n\n");
-
-        rewardsInfo.append("Keep using the system to climb the reward tiers! 🚀");
-
-        TextArea textArea = new TextArea(rewardsInfo.toString());
-        textArea.setEditable(false);
-        textArea.setWrapText(true);
-        textArea.setPrefSize(500, 500);
-
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Your Rewards Profile");
-        alert.setHeaderText("Reward Tier: " + currentUser.getRewardTier());
-        alert.getDialogPane().setContent(textArea);
-        alert.showAndWait();
     }
 
     @FXML
     private void handleExportReport() {
-        if (allReturnedItems == null || allReturnedItems.isEmpty()) {
-            showAlert("No Data", "There are no returned items to export.");
-            return;
-        }
-
-        // Enhanced export with reward information
-        System.out.println("=== RETURNED ITEMS REPORT ===");
-        System.out.println("Total Items: " + allReturnedItems.size());
-        System.out.println("Generated by: " + userService.getCurrentUser().getUsername());
-        System.out.println("=============================");
-
-        for (LostFoundItem item : allReturnedItems) {
-            String rewardInfo = "";
-            if (item instanceof LostItem) {
-                LostItem lostItem = (LostItem) item;
-                if (lostItem.getReward() != null && !lostItem.getReward().isEmpty()) {
-                    rewardInfo = " | Reward: " + lostItem.getReward();
-                }
-            }
-
-            System.out.println("• " + item.getItemName() + " | " + item.getCategory() +
-                    " | " + item.getLocation() + " | Verified: " + item.isVerified() +
-                    " | Reported by: " + item.getReportedBy() + rewardInfo);
-        }
-
-        showAlert("Report Generated", "Returned items report has been generated in the console.\nTotal items: " + allReturnedItems.size());
+        showAlert("Export Feature",
+                "Export feature will be implemented in the next version.\n\n" +
+                        "This will allow you to export returned items data to CSV or PDF format.",
+                Alert.AlertType.INFORMATION);
     }
 
-    private void closeWindow() {
-        try {
-            Stage currentStage = (Stage) itemsContainer.getScene().getWindow();
-            currentStage.close();
-            System.out.println("✅ Returned items window closed");
-        } catch (Exception e) {
-            System.err.println("❌ Error closing window: " + e.getMessage());
-        }
+    @FXML
+    private void handleViewMyRewards() {
+        showAlert("Rewards Feature",
+                "Rewards system will be implemented in the next version.\n\n" +
+                        "You will be able to view your reward points and redemption options here.",
+                Alert.AlertType.INFORMATION);
     }
 
-    private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

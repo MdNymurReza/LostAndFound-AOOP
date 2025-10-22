@@ -1,8 +1,9 @@
 package com.unmadgamer.lostandfoundfinal.service;
 
-import com.unmadgamer.lostandfoundfinal.model.FoundItem;
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
 import com.unmadgamer.lostandfoundfinal.model.LostItem;
+import com.unmadgamer.lostandfoundfinal.model.FoundItem;
+import com.unmadgamer.lostandfoundfinal.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,15 +13,14 @@ import java.util.stream.Collectors;
 public class ItemService {
     private static ItemService instance;
     private final JsonDataService jsonDataService;
+    private final UserService userService;
     private List<LostFoundItem> items;
 
     private ItemService() {
         this.jsonDataService = new JsonDataService();
+        this.userService = UserService.getInstance();
         loadItems();
         System.out.println("✅ ItemService initialized with " + items.size() + " items");
-
-        // Debug: Print all loaded items
-        debugLoadedItems();
     }
 
     public static synchronized ItemService getInstance() {
@@ -34,7 +34,6 @@ public class ItemService {
         items = jsonDataService.loadItems();
         if (items == null) {
             items = new ArrayList<>();
-            System.out.println("⚠️  Items list was null, created new empty list");
         }
     }
 
@@ -42,249 +41,239 @@ public class ItemService {
         jsonDataService.saveItems(items);
     }
 
-    // Debug method to print all loaded items
-    private void debugLoadedItems() {
-        System.out.println("=== LOADED ITEMS DEBUG ===");
-        for (LostFoundItem item : items) {
-            System.out.println("📦 " + item.getItemName() +
-                    " | Type: " + item.getType() +
-                    " | Status: " + item.getStatus() +
-                    " | Verification: " + item.getVerificationStatus() +
-                    " | Reported by: " + item.getReportedBy() +
-                    " | ID: " + item.getId());
-        }
-        System.out.println("=== END DEBUG ===");
+    // Add new items
+    public boolean addLostItem(LostItem lostItem) {
+        items.add(lostItem);
+        saveItems();
+        System.out.println("✅ Lost item added: " + lostItem.getItemName());
+        return true;
     }
 
-    // Add new items with better error handling
-    public boolean addLostItem(LostItem item) {
-        try {
-            if (item == null) {
-                System.err.println("❌ Cannot add null lost item");
-                return false;
-            }
-
-            item.setId(generateId());
-
-            // Ensure proper initialization
-            if (item.getStatus() == null) {
-                item.setStatus("pending");
-            }
-            if (item.getVerificationStatus() == null) {
-                item.setVerificationStatus("pending");
-            }
-
-            items.add(item);
-            saveItems();
-            System.out.println("✅ Lost item added: " + item.getItemName() + " (ID: " + item.getId() + ")");
-            return true;
-        } catch (Exception e) {
-            System.err.println("❌ Error adding lost item: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
+    public boolean addFoundItem(FoundItem foundItem) {
+        items.add(foundItem);
+        saveItems();
+        System.out.println("✅ Found item added: " + foundItem.getItemName());
+        return true;
     }
 
-    public boolean addFoundItem(FoundItem item) {
-        try {
-            if (item == null) {
-                System.err.println("❌ Cannot add null found item");
-                return false;
-            }
-
-            item.setId(generateId());
-
-            // Ensure proper initialization
-            if (item.getStatus() == null) {
-                item.setStatus("pending");
-            }
-            if (item.getVerificationStatus() == null) {
-                item.setVerificationStatus("pending");
-            }
-
-            items.add(item);
-            saveItems();
-            System.out.println("✅ Found item added: " + item.getItemName() + " (ID: " + item.getId() + ")");
-            return true;
-        } catch (Exception e) {
-            System.err.println("❌ Error adding found item: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // Verification methods
-    public boolean verifyItem(String itemId, String adminUsername) {
-        Optional<LostFoundItem> itemOpt = getItemById(itemId);
-        if (itemOpt.isPresent()) {
-            LostFoundItem item = itemOpt.get();
-            item.verify(adminUsername);
-            saveItems();
-            System.out.println("✅ Item verified: " + item.getItemName() + " by " + adminUsername);
-            return true;
-        }
-        System.err.println("❌ Item not found for verification: " + itemId);
-        return false;
-    }
-
-    public boolean rejectItem(String itemId, String adminUsername) {
-        Optional<LostFoundItem> itemOpt = getItemById(itemId);
-        if (itemOpt.isPresent()) {
-            LostFoundItem item = itemOpt.get();
-            item.reject(adminUsername);
-            saveItems();
-            System.out.println("❌ Item rejected: " + item.getItemName() + " by " + adminUsername);
-            return true;
-        }
-        System.err.println("❌ Item not found for rejection: " + itemId);
-        return false;
-    }
-
-    // Claim methods
-    public boolean claimItem(String itemId, String claimantUsername) {
-        Optional<LostFoundItem> itemOpt = getItemById(itemId);
-        if (itemOpt.isPresent() && itemOpt.get().isVerified()) {
-            LostFoundItem item = itemOpt.get();
-            if (item instanceof LostItem) {
-                ((LostItem) item).claimItem(claimantUsername);
-            } else if (item instanceof FoundItem) {
-                ((FoundItem) item).claimItem(claimantUsername);
-            }
-            saveItems();
-            System.out.println("📝 Item claimed: " + item.getItemName() + " by " + claimantUsername);
-            return true;
-        } else if (itemOpt.isPresent() && !itemOpt.get().isVerified()) {
-            System.err.println("❌ Cannot claim unverified item: " + itemId);
-        } else {
-            System.err.println("❌ Item not found for claim: " + itemId);
-        }
-        return false;
-    }
-
-    public boolean approveClaim(String itemId, String adminUsername) {
-        Optional<LostFoundItem> itemOpt = getItemById(itemId);
-        if (itemOpt.isPresent()) {
-            LostFoundItem item = itemOpt.get();
-            if (item instanceof LostItem) {
-                ((LostItem) item).approveClaim(adminUsername);
-            } else if (item instanceof FoundItem) {
-                ((FoundItem) item).approveClaim(adminUsername);
-            }
-            saveItems();
-            System.out.println("✅ Claim approved: " + item.getItemName() + " by " + adminUsername);
-            return true;
-        }
-        System.err.println("❌ Item not found for claim approval: " + itemId);
-        return false;
-    }
-
-    public boolean rejectClaim(String itemId, String adminUsername) {
-        Optional<LostFoundItem> itemOpt = getItemById(itemId);
-        if (itemOpt.isPresent()) {
-            LostFoundItem item = itemOpt.get();
-            if (item instanceof LostItem) {
-                ((LostItem) item).rejectClaim(adminUsername);
-            } else if (item instanceof FoundItem) {
-                ((FoundItem) item).rejectClaim(adminUsername);
-            }
-            saveItems();
-            System.out.println("❌ Claim rejected: " + item.getItemName() + " by " + adminUsername);
-            return true;
-        }
-        System.err.println("❌ Item not found for claim rejection: " + itemId);
-        return false;
-    }
-
-    // NEW METHOD: Get returned items for a specific user
-    public List<LostFoundItem> getReturnedItemsForUser(String username) {
+    // Get items by type
+    public List<LostItem> getLostItems() {
         return items.stream()
-                .filter(item -> item != null &&
-                        ("returned".equals(item.getStatus()) || "claimed".equals(item.getStatus())) &&
-                        username.equals(item.getReportedBy()))
+                .filter(item -> item instanceof LostItem)
+                .map(item -> (LostItem) item)
                 .collect(Collectors.toList());
     }
 
-    // Get items for verification
-    public List<LostFoundItem> getPendingVerificationItems() {
+    public List<FoundItem> getFoundItems() {
         return items.stream()
-                .filter(item -> item != null && "pending".equals(item.getVerificationStatus()))
+                .filter(item -> item instanceof FoundItem)
+                .map(item -> (FoundItem) item)
                 .collect(Collectors.toList());
     }
 
-    public List<LostFoundItem> getVerifiedItems() {
-        return items.stream()
-                .filter(item -> item != null && "verified".equals(item.getVerificationStatus()))
-                .collect(Collectors.toList());
-    }
-
-    public List<LostFoundItem> getPendingClaimItems() {
-        return items.stream()
-                .filter(item -> {
-                    if (item == null) return false;
-                    if (item instanceof LostItem) {
-                        return "pending".equals(((LostItem) item).getClaimStatus());
-                    } else if (item instanceof FoundItem) {
-                        return "pending".equals(((FoundItem) item).getClaimStatus());
-                    }
-                    return false;
-                })
-                .collect(Collectors.toList());
-    }
-
-    // Get items for regular users - FIXED LOGIC
+    // Get available items for claiming
     public List<LostFoundItem> getAvailableLostItems() {
         return items.stream()
-                .filter(item -> item != null &&
-                        item instanceof LostItem &&
-                        "verified".equals(item.getVerificationStatus()) &&
-                        !"claimed".equals(item.getStatus()) &&
-                        !"returned".equals(item.getStatus()))
+                .filter(item -> item instanceof LostItem)
+                .filter(item -> item.isVerified() && !"claimed".equals(item.getStatus()) && !"returned".equals(item.getStatus()))
                 .collect(Collectors.toList());
     }
 
     public List<LostFoundItem> getAvailableFoundItems() {
         return items.stream()
-                .filter(item -> item != null &&
-                        item instanceof FoundItem &&
-                        "verified".equals(item.getVerificationStatus()) &&
-                        !"claimed".equals(item.getStatus()) &&
-                        !"returned".equals(item.getStatus()))
+                .filter(item -> item instanceof FoundItem)
+                .filter(item -> item.isVerified() && !"claimed".equals(item.getStatus()) && !"returned".equals(item.getStatus()))
                 .collect(Collectors.toList());
     }
 
-    // Get items by status for returned items controller
-    public List<LostFoundItem> getItemsByStatus(String status) {
+    // Get items for current user
+    public List<LostFoundItem> getLostItemsByUser(String username) {
         return items.stream()
-                .filter(item -> item != null && status.equals(item.getStatus()))
+                .filter(item -> item instanceof LostItem)
+                .filter(item -> username.equals(item.getReportedBy()))
                 .collect(Collectors.toList());
     }
 
-    // Get items by reporter
-    public List<LostFoundItem> getItemsByReporter(String username) {
+    public List<LostFoundItem> getFoundItemsByUser(String username) {
         return items.stream()
-                .filter(item -> item != null && username.equals(item.getReportedBy()))
+                .filter(item -> item instanceof FoundItem)
+                .filter(item -> username.equals(item.getReportedBy()))
                 .collect(Collectors.toList());
     }
 
-    // Helper methods
-    private String generateId() {
-        return "ITEM_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000);
-    }
-
-    public Optional<LostFoundItem> getItemById(String id) {
-        if (id == null) {
-            return Optional.empty();
-        }
-        return items.stream()
-                .filter(item -> item != null && id.equals(item.getId()))
+    // Simple claim item method
+    public boolean claimItem(String itemId, String claimant) {
+        Optional<LostFoundItem> itemOpt = items.stream()
+                .filter(item -> itemId.equals(item.getId()))
                 .findFirst();
+
+        if (itemOpt.isPresent()) {
+            LostFoundItem item = itemOpt.get();
+
+            // Check if item can be claimed
+            if (item.isVerified() && !"claimed".equals(item.getStatus()) && !"returned".equals(item.getStatus())) {
+                // Set item as claimed
+                item.setStatus("claimed");
+
+                // Set claim details based on item type
+                if (item instanceof LostItem) {
+                    LostItem lostItem = (LostItem) item;
+                    lostItem.setClaimedBy(claimant);
+                    lostItem.setClaimStatus("pending");
+                } else if (item instanceof FoundItem) {
+                    FoundItem foundItem = (FoundItem) item;
+                    foundItem.setClaimedBy(claimant);
+                    foundItem.setClaimStatus("pending");
+                }
+
+                saveItems();
+                System.out.println("✅ Item claimed: " + item.getItemName() + " by " + claimant);
+                return true;
+            }
+        }
+        return false;
     }
 
-    public List<LostFoundItem> getAllItems() {
-        return new ArrayList<>(items);
+    // Get items for admin verification
+    public List<LostFoundItem> getPendingVerificationItems() {
+        return items.stream()
+                .filter(item -> "pending".equals(item.getVerificationStatus()))
+                .collect(Collectors.toList());
     }
 
-    // Statistics - FIXED METHODS
+    public List<LostFoundItem> getVerifiedItems() {
+        return items.stream()
+                .filter(item -> "verified".equals(item.getVerificationStatus()))
+                .collect(Collectors.toList());
+    }
+
+    public List<LostFoundItem> getPendingClaimItems() {
+        List<LostFoundItem> pendingClaims = new ArrayList<>();
+
+        // Get lost items with pending claims
+        pendingClaims.addAll(getLostItems().stream()
+                .filter(LostItem::isClaimPending)
+                .collect(Collectors.toList()));
+
+        // Get found items with pending claims
+        pendingClaims.addAll(getFoundItems().stream()
+                .filter(FoundItem::isClaimPending)
+                .collect(Collectors.toList()));
+
+        return pendingClaims;
+    }
+
+    // Verification methods
+    public boolean verifyItem(String itemId, String adminUsername) {
+        Optional<LostFoundItem> itemOpt = items.stream()
+                .filter(item -> itemId.equals(item.getId()))
+                .findFirst();
+
+        if (itemOpt.isPresent()) {
+            LostFoundItem item = itemOpt.get();
+            item.setVerificationStatus("verified");
+            item.setVerifiedBy(adminUsername);
+            item.setVerificationDate(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+            saveItems();
+            System.out.println("✅ Item verified: " + item.getItemName() + " by " + adminUsername);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean rejectItem(String itemId, String adminUsername) {
+        Optional<LostFoundItem> itemOpt = items.stream()
+                .filter(item -> itemId.equals(item.getId()))
+                .findFirst();
+
+        if (itemOpt.isPresent()) {
+            LostFoundItem item = itemOpt.get();
+            item.setVerificationStatus("rejected");
+            item.setVerifiedBy(adminUsername);
+            item.setVerificationDate(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+            saveItems();
+            System.out.println("❌ Item rejected: " + item.getItemName() + " by " + adminUsername);
+            return true;
+        }
+        return false;
+    }
+
+    // Claim approval methods
+    public boolean approveClaim(String itemId, String adminUsername) {
+        Optional<LostFoundItem> itemOpt = items.stream()
+                .filter(item -> itemId.equals(item.getId()))
+                .findFirst();
+
+        if (itemOpt.isPresent()) {
+            LostFoundItem item = itemOpt.get();
+
+            if (item instanceof LostItem) {
+                LostItem lostItem = (LostItem) item;
+                if (lostItem.isClaimPending()) {
+                    lostItem.approveClaim();
+
+                    // Reward the user who found the item
+                    User finder = userService.getUserByUsername(lostItem.getClaimedBy()).orElse(null);
+                    if (finder != null) {
+                        finder.addRewardPoints(50);
+                        finder.incrementItemsReturned();
+                        System.out.println("🎁 Rewarded user: " + finder.getUsername() + " with 50 points");
+                    }
+
+                    saveItems();
+                    return true;
+                }
+            } else if (item instanceof FoundItem) {
+                FoundItem foundItem = (FoundItem) item;
+                if (foundItem.isClaimPending()) {
+                    foundItem.approveClaim();
+
+                    // Reward the user who reported the found item
+                    User reporter = userService.getUserByUsername(foundItem.getReportedBy()).orElse(null);
+                    if (reporter != null) {
+                        reporter.addRewardPoints(50);
+                        reporter.incrementItemsReturned();
+                        System.out.println("🎁 Rewarded user: " + reporter.getUsername() + " with 50 points");
+                    }
+
+                    saveItems();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean rejectClaim(String itemId, String adminUsername) {
+        Optional<LostFoundItem> itemOpt = items.stream()
+                .filter(item -> itemId.equals(item.getId()))
+                .findFirst();
+
+        if (itemOpt.isPresent()) {
+            LostFoundItem item = itemOpt.get();
+
+            if (item instanceof LostItem) {
+                LostItem lostItem = (LostItem) item;
+                if (lostItem.isClaimPending()) {
+                    lostItem.rejectClaim();
+                    saveItems();
+                    return true;
+                }
+            } else if (item instanceof FoundItem) {
+                FoundItem foundItem = (FoundItem) item;
+                if (foundItem.isClaimPending()) {
+                    foundItem.rejectClaim();
+                    saveItems();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Statistics
     public long getPendingVerificationCount() {
         return getPendingVerificationItems().size();
     }
@@ -292,62 +281,50 @@ public class ItemService {
     public long getVerifiedTodayCount() {
         String today = java.time.LocalDate.now().toString();
         return items.stream()
-                .filter(item -> item != null && today.equals(item.getVerificationDate()))
+                .filter(item -> today.equals(item.getVerificationDate()))
                 .count();
     }
 
     public long getTotalVerifiedCount() {
-        return getVerifiedItems().size();
+        return items.stream()
+                .filter(item -> "verified".equals(item.getVerificationStatus()))
+                .count();
     }
 
     public double getVerificationRate() {
         long total = items.size();
-        long verified = getVerifiedItems().size();
+        long verified = getTotalVerifiedCount();
         return total > 0 ? (verified * 100.0 / total) : 100.0;
     }
 
-    // Debug method for controllers
-    public void debugCurrentData() {
-        System.out.println("=== ITEM SERVICE CURRENT DATA ===");
+    // Helper methods
+    public Optional<LostFoundItem> getItemById(String id) {
+        return items.stream()
+                .filter(item -> id.equals(item.getId()))
+                .findFirst();
+    }
+
+    public List<LostFoundItem> getAllItems() {
+        return new ArrayList<>(items);
+    }
+
+    // Debug method
+    public void debugItems() {
+        System.out.println("=== ITEMS DEBUG ===");
         System.out.println("Total items: " + items.size());
 
-        long lostCount = items.stream().filter(item -> item instanceof LostItem).count();
-        long foundCount = items.stream().filter(item -> item instanceof FoundItem).count();
+        long lostCount = getLostItems().size();
+        long foundCount = getFoundItems().size();
         long pendingVerification = getPendingVerificationCount();
         long verified = getTotalVerifiedCount();
 
-        System.out.println("Lost items: " + lostCount);
-        System.out.println("Found items: " + foundCount);
-        System.out.println("Pending verification: " + pendingVerification);
-        System.out.println("Verified items: " + verified);
-        System.out.println("Verification rate: " + getVerificationRate() + "%");
+        System.out.println("📊 Item breakdown:");
+        System.out.println("   Lost items: " + lostCount);
+        System.out.println("   Found items: " + foundCount);
+        System.out.println("   Pending verification: " + pendingVerification);
+        System.out.println("   Verified items: " + verified);
+        System.out.println("   Verification rate: " + getVerificationRate() + "%");
 
-        // Print recent items
-        System.out.println("Recent items (last 5):");
-        items.stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .limit(5)
-                .forEach(item ->
-                        System.out.println("  - " + item.getItemName() +
-                                " (" + item.getType() + ") - " +
-                                item.getStatus() + " - " +
-                                item.getVerificationStatus())
-                );
         System.out.println("=== END DEBUG ===");
-    }
-
-    // Refresh data (reload from JSON)
-    public void refreshData() {
-        System.out.println("🔄 Refreshing item data from JSON...");
-        loadItems();
-        System.out.println("✅ Item data refreshed. Total items: " + items.size());
-    }
-
-    // Reset all data (for testing)
-    public void resetAllData() {
-        System.out.println("🔄 Resetting all item data...");
-        items.clear();
-        saveItems();
-        System.out.println("✅ All item data reset");
     }
 }

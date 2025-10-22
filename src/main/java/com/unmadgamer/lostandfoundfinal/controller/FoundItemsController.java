@@ -1,6 +1,5 @@
 package com.unmadgamer.lostandfoundfinal.controller;
 
-import com.unmadgamer.lostandfoundfinal.model.FoundItem;
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
@@ -27,7 +26,6 @@ public class FoundItemsController {
     @FXML private TableColumn<LostFoundItem, String> colLocation;
     @FXML private TableColumn<LostFoundItem, String> colDate;
     @FXML private TableColumn<LostFoundItem, String> colStatus;
-    @FXML private TableColumn<LostFoundItem, String> colActions;
 
     @FXML private TextField searchField;
     @FXML private ComboBox<String> categoryFilter;
@@ -45,7 +43,6 @@ public class FoundItemsController {
 
         initializeTable();
         setupFilters();
-        setupClaimFunctionality();
         loadItems();
         updateWelcomeMessage();
     }
@@ -58,41 +55,6 @@ public class FoundItemsController {
         colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        // Actions column with Claim button
-        colActions.setCellFactory(param -> new TableCell<LostFoundItem, String>() {
-            private final Button claimBtn = new Button("Claim");
-            {
-                claimBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;");
-                claimBtn.setOnAction(event -> {
-                    LostFoundItem item = getTableView().getItems().get(getIndex());
-                    handleClaimItem(item);
-                });
-            }
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    LostFoundItem currentItem = getTableView().getItems().get(getIndex());
-                    // Only show claim button for verified items that aren't already returned
-                    if (currentItem.isVerified() && !"returned".equals(currentItem.getStatus())) {
-                        claimBtn.setText("Claim");
-                        claimBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
-                        setGraphic(claimBtn);
-                    } else if ("returned".equals(currentItem.getStatus())) {
-                        claimBtn.setText("Returned");
-                        claimBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white;");
-                        claimBtn.setDisable(true);
-                        setGraphic(claimBtn);
-                    } else {
-                        setGraphic(null);
-                    }
-                }
-            }
-        });
-
         allItems = FXCollections.observableArrayList();
         filteredItems = FXCollections.observableArrayList();
         itemsTable.setItems(filteredItems);
@@ -100,7 +62,7 @@ public class FoundItemsController {
 
     private void setupFilters() {
         categoryFilter.setItems(FXCollections.observableArrayList(
-                "All", "Electronics", "Documents", "Clothing", "Accessories", "Bags", "Books", "Other"
+                "All", "Electronics", "Documents", "Clothing", "Accessories", "Other"
         ));
         categoryFilter.setValue("All");
 
@@ -109,26 +71,11 @@ public class FoundItemsController {
         categoryFilter.valueProperty().addListener((observable, oldValue, newValue) -> filterItems());
     }
 
-    private void setupClaimFunctionality() {
-        // Double-click to view details and claim
-        itemsTable.setRowFactory(tv -> {
-            TableRow<LostFoundItem> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) {
-                    LostFoundItem item = row.getItem();
-                    showItemDetails(item);
-                }
-            });
-            return row;
-        });
-    }
-
     private void loadItems() {
         List<LostFoundItem> items = itemService.getAvailableFoundItems();
         allItems.setAll(items);
         filteredItems.setAll(items);
-
-        System.out.println("✅ Loaded " + items.size() + " found items for user");
+        System.out.println("✅ Loaded " + items.size() + " available found items");
     }
 
     private void filterItems() {
@@ -152,100 +99,20 @@ public class FoundItemsController {
     }
 
     @FXML
-    private void handleClaimItem(LostFoundItem item) {
-        String claimant = userService.getCurrentUser().getUsername();
+    private void handleReportFoundItem() {
+        try {
+            Stage currentStage = (Stage) itemsTable.getScene().getWindow();
+            currentStage.close();
 
-        // Check if item is already returned
-        if ("returned".equals(item.getStatus())) {
-            showAlert("Already Returned",
-                    "This item has already been returned to its owner!",
-                    Alert.AlertType.WARNING);
-            return;
-        }
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/found-form.fxml"));
+            Parent root = loader.load();
 
-        // Check if user is trying to claim their own found item
-        if (item.getReportedBy().equals(claimant)) {
-            showAlert("Cannot Claim",
-                    "You cannot claim an item you reported as found!",
-                    Alert.AlertType.WARNING);
-            return;
-        }
-
-        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmAlert.setTitle("Claim Found Item");
-        confirmAlert.setHeaderText("Claim '" + item.getItemName() + "'?");
-        confirmAlert.setContentText(
-                "Are you sure this is your lost item?\n\n" +
-                        "Item Details:\n" +
-                        "• Name: " + item.getItemName() + "\n" +
-                        "• Category: " + item.getCategory() + "\n" +
-                        "• Location Found: " + item.getLocation() + "\n" +
-                        "• Date Found: " + item.getDate() + "\n\n" +
-                        "You will need to provide proof of ownership. Admin verification will be required."
-        );
-
-        confirmAlert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
-
-        if (confirmAlert.showAndWait().orElse(ButtonType.NO) == ButtonType.YES) {
-            if (itemService.claimItem(item.getId(), claimant)) {
-                showAlert("Claim Submitted",
-                        "Your claim request has been submitted successfully!\n\n" +
-                                "Please wait for admin approval. You will need to provide proof of ownership to receive the item.",
-                        Alert.AlertType.INFORMATION);
-                loadItems(); // Refresh the table
-            } else {
-                showAlert("Claim Failed",
-                        "Failed to submit claim request. Please try again.",
-                        Alert.AlertType.ERROR);
-            }
-        }
-    }
-
-    private void showItemDetails(LostFoundItem item) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Item Details");
-        alert.setHeaderText(item.getItemName());
-
-        String details =
-                "Category: " + item.getCategory() + "\n" +
-                        "Description: " + item.getDescription() + "\n" +
-                        "Location Found: " + item.getLocation() + "\n" +
-                        "Date Found: " + item.getDate() + "\n" +
-                        "Reported by: " + item.getReportedBy() + "\n" +
-                        "Status: " + getStatusDisplay(item.getStatus()) + "\n" +
-                        "Verification: " + getVerificationStatus(item) + "\n\n";
-
-        // Add FoundItem specific details
-        if (item instanceof FoundItem) {
-            FoundItem foundItem = (FoundItem) item;
-            details += "Storage Location: " + foundItem.getStorageLocation() + "\n";
-            if (foundItem.getClaimedBy() != null) {
-                details += "Claimed by: " + foundItem.getClaimedBy() + "\n";
-                details += "Claim Status: " + foundItem.getClaimStatus() + "\n";
-            }
-        }
-
-        alert.setContentText(details);
-        alert.showAndWait();
-    }
-
-    private String getStatusDisplay(String status) {
-        switch (status) {
-            case "pending": return "⏳ Pending Verification";
-            case "verified": return "✅ Verified - Available for Claim";
-            case "returned": return "📦 Returned to Owner";
-            case "rejected": return "❌ Rejected";
-            default: return status;
-        }
-    }
-
-    private String getVerificationStatus(LostFoundItem item) {
-        if (item.isVerified()) {
-            return "✅ Verified by " + item.getVerifiedBy();
-        } else if (item.isRejected()) {
-            return "❌ Rejected by " + item.getVerifiedBy();
-        } else {
-            return "⏳ Pending Admin Verification";
+            Stage formStage = new Stage();
+            formStage.setTitle("Report Found Item - Lost and Found System");
+            formStage.setScene(new Scene(root, 600, 700));
+            formStage.show();
+        } catch (IOException e) {
+            showAlert("Navigation Error", "Cannot open found item form: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
@@ -278,28 +145,10 @@ public class FoundItemsController {
 
             Stage dashboardStage = new Stage();
             dashboardStage.setTitle("Dashboard - Lost and Found System");
-            dashboardStage.setScene(new Scene(root, 600, 450));
+            dashboardStage.setScene(new Scene(root, 600, 400));
             dashboardStage.show();
         } catch (IOException e) {
             showAlert("Navigation Error", "Cannot open dashboard: " + e.getMessage(), Alert.AlertType.ERROR);
-        }
-    }
-
-    @FXML
-    private void handleReportFoundItem() {
-        try {
-            Stage currentStage = (Stage) itemsTable.getScene().getWindow();
-            currentStage.close();
-
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/found-form.fxml"));
-            Parent root = loader.load();
-
-            Stage formStage = new Stage();
-            formStage.setTitle("Report Found Item - Lost and Found System");
-            formStage.setScene(new Scene(root, 600, 700));
-            formStage.show();
-        } catch (IOException e) {
-            showAlert("Navigation Error", "Cannot open found item form: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 

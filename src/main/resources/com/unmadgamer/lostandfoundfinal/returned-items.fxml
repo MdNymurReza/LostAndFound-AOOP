@@ -7,53 +7,75 @@
 
 <VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.unmadgamer.lostandfoundfinal.controller.ReturnedItemsController"
-      spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;">
+      spacing="20" style="-fx-padding: 25; -fx-background-color: #f8f9fa;" prefHeight="700" prefWidth="1000">
 
    <!-- Header -->
    <HBox alignment="CENTER_LEFT" spacing="15">
       <VBox spacing="5">
-         <Label text="Returned Items" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-         <Label fx:id="subtitleLabel" text="Items that have been successfully returned to owners" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
+         <Label text="Returned Items History" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+         <Label text="Track all successfully returned lost and found items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
       </VBox>
       <Region HBox.hgrow="ALWAYS"/>
-      <Button text="My Rewards" onAction="#handleViewMyRewards"
-              style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
       <Button text="Refresh" onAction="#handleRefresh"
-              style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+              style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
       <Button text="Export Report" onAction="#handleExportReport"
-              style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+              style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
       <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
-              style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 8;"/>
+              style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
    </HBox>
 
-   <!-- Stats and Filters -->
-   <HBox spacing="20" alignment="CENTER_LEFT">
-      <!-- Stats Card -->
-      <VBox spacing="5" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 1); -fx-padding: 15;">
-         <Label text="Total Returned Items" style="-fx-text-fill: #7f8c8d; -fx-font-size: 12;"/>
-         <Label fx:id="totalItemsLabel" text="0" style="-fx-text-fill: #27ae60; -fx-font-size: 24; -fx-font-weight: bold;"/>
-      </VBox>
-
-      <Region HBox.hgrow="ALWAYS"/>
-
-      <!-- Search and Filter -->
-      <TextField fx:id="searchField" promptText="Search returned items..."
-                 style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8 15;"
-                 prefWidth="200"/>
-      <ComboBox fx:id="filterCombo" promptText="Filter by status"
-                style="-fx-background-radius: 8; -fx-border-radius: 8;"
-                prefWidth="150"/>
+   <!-- Statistics -->
+   <HBox spacing="20" alignment="CENTER">
+      <Label fx:id="statsLabel" text="📊 Statistics: Loading..."
+             style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-padding: 15; -fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"/>
    </HBox>
 
-   <!-- Items Container -->
-   <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-border-color: transparent;">
-      <VBox fx:id="itemsContainer" spacing="15" style="-fx-padding: 10;"/>
-   </ScrollPane>
+   <!-- Search and Filter Section -->
+   <VBox spacing="10" style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 1);">
+      <Label text="Search &amp; Filter" style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+      <HBox spacing="15" alignment="CENTER_LEFT">
+         <TextField fx:id="searchField" promptText="Search returned items..."
+                    style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8 15;"
+                    prefWidth="250"/>
+         <ComboBox fx:id="typeFilter" promptText="Item Type"
+                   style="-fx-background-radius: 8; -fx-border-radius: 8;"
+                   prefWidth="120"/>
+         <ComboBox fx:id="categoryFilter" promptText="Category"
+                   style="-fx-background-radius: 8; -fx-border-radius: 8;"
+                   prefWidth="150"/>
+         <Region HBox.hgrow="ALWAYS"/>
+         <Button text="Search" onAction="#handleSearch"
+                 style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20; -fx-background-radius: 8;"/>
+         <Button text="Clear Filters" onAction="#handleClearFilters"
+                 style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20; -fx-background-radius: 8;"/>
+      </HBox>
+   </VBox>
 
-   <!-- Success and Rewards Message -->
-   <VBox spacing="5" style="-fx-padding: 10; -fx-background-color: #fff3cd; -fx-border-color: #ffeaa7; -fx-border-radius: 5;">
-      <Label text="🎉 Success Stories &amp; Rewards:" style="-fx-font-weight: bold; -fx-text-fill: #856404;"/>
-      <Label text="These items have been successfully returned! Users earn reward points for returned items." style="-fx-text-fill: #856404; -fx-font-size: 12;"/>
-      <Label text="💎 Reward Tiers: Bronze (0-199) • Silver (200-499) • Gold (500-999) • Platinum (1000+)" style="-fx-text-fill: #856404; -fx-font-size: 11; -fx-font-weight: bold;"/>
+   <!-- Returned Items Table -->
+   <VBox spacing="10" VBox.vgrow="ALWAYS">
+      <Label text="📦 Returned Items History" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
+      <TableView fx:id="returnedTable" VBox.vgrow="ALWAYS">
+         <columns>
+            <TableColumn fx:id="colItemName" text="Item Name" prefWidth="150"/>
+            <TableColumn fx:id="colCategory" text="Category" prefWidth="120"/>
+            <TableColumn fx:id="colType" text="Type" prefWidth="80"/>
+            <TableColumn fx:id="colReturnedTo" text="Returned To" prefWidth="120"/>
+            <TableColumn fx:id="colReturnedBy" text="Returned By" prefWidth="120"/>
+            <TableColumn fx:id="colDate" text="Date" prefWidth="100"/>
+            <TableColumn fx:id="colActions" text="Actions" prefWidth="100"/>
+         </columns>
+         <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+         </columnResizePolicy>
+      </TableView>
+   </VBox>
+
+   <!-- Instructions -->
+   <VBox spacing="5" style="-fx-padding: 15; -fx-background-color: #e8f4f8; -fx-border-color: #3498db; -fx-border-radius: 8;">
+      <Label text="💡 Quick Guide:" style="-fx-font-weight: bold; -fx-text-fill: #2980b9;"/>
+      <Label text="• This page shows all successfully returned items in the system" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
+      <Label text="• Use search and filters to find specific returned items" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
+      <Label text="• Click 'View Details' to see complete information about any returned item" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
+      <Label text="• Export feature allows you to download returned items report" style="-fx-text-fill: #2980b9; -fx-font-size: 11;"/>
    </VBox>
 </VBox>
