@@ -10,10 +10,15 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class LoginController {
 
@@ -33,8 +38,11 @@ public class LoginController {
         userService = UserService.getInstance();
         setupKeyboardShortcuts();
 
-        // Debug: Show available users
+        // Debug user data
+        userService.debugUserJsonData();
+        userService.debugAdminUser();
         debugUserList();
+        testFxmlFiles();
     }
 
     private void setupKeyboardShortcuts() {
@@ -61,9 +69,29 @@ public class LoginController {
     private void debugUserList() {
         System.out.println("=== AVAILABLE USERS ===");
         userService.getAllUsers().forEach(user -> {
-            System.out.println("👤 " + user.getUsername() + " | " + user.getPassword() + " | " + user.getRole());
+            System.out.println("👤 " + user.getUsername() + " | " + user.getPassword() + " | " + user.getRole() + " | Admin: " + user.isAdmin());
         });
         System.out.println("=== END USER LIST ===");
+    }
+
+    private void testFxmlFiles() {
+        System.out.println("=== FXML FILE CHECK ===");
+        String[] fxmlFiles = {
+                "/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml",
+                "/com/unmadgamer/lostandfoundfinal/dashboard.fxml",
+                "/com/unmadgamer/lostandfoundfinal/Login.fxml",
+                "/com/unmadgamer/lostandfoundfinal/Registration.fxml"
+        };
+
+        for (String fxmlFile : fxmlFiles) {
+            URL url = getClass().getResource(fxmlFile);
+            if (url != null) {
+                System.out.println("✅ FOUND: " + fxmlFile);
+            } else {
+                System.err.println("❌ NOT FOUND: " + fxmlFile);
+            }
+        }
+        System.out.println("=== END FXML CHECK ===");
     }
 
     @FXML
@@ -140,6 +168,7 @@ public class LoginController {
         // Quick admin login for testing
         usernameTextField.setText("admin");
         passwordTextField.setText("admin123");
+        System.out.println("🧪 ADMIN LOGIN TEST - Auto-filled credentials");
         handleLogin();
     }
 
@@ -151,6 +180,46 @@ public class LoginController {
         handleLogin();
     }
 
+    @FXML
+    private void testAdminNavigation() {
+        // Force admin navigation test
+        System.out.println("🧪 TESTING ADMIN NAVIGATION DIRECTLY...");
+        usernameTextField.setText("admin");
+        passwordTextField.setText("admin123");
+        handleLogin();
+    }
+
+    @FXML
+    private void emergencyAdminFix() {
+        System.out.println("🚨 EMERGENCY ADMIN FIX - Creating fresh admin user");
+
+        try {
+            // Create a fresh admin user
+            User freshAdmin = new User(
+                    "admin",
+                    "admin123",
+                    "admin@lostfound.com",
+                    "System",
+                    "Administrator",
+                    "admin"  // Explicitly set role to "admin"
+            );
+
+            // Save this user directly
+            List<User> users = new ArrayList<>();
+            users.add(freshAdmin);
+            userService.saveUsers(users);
+
+            System.out.println("✅ Fresh admin user created with role: 'admin'");
+            System.out.println("🔄 Please restart the application and try admin login again");
+
+            showAlert("Admin Fix", "Fresh admin user created. Please restart the application.", Alert.AlertType.INFORMATION);
+
+        } catch (Exception e) {
+            System.err.println("❌ Emergency admin fix failed: " + e.getMessage());
+            showError("Emergency fix failed: " + e.getMessage());
+        }
+    }
+
     private void openDashboard() {
         try {
             // Close login window
@@ -158,39 +227,121 @@ public class LoginController {
             currentStage.close();
 
             User currentUser = userService.getCurrentUser();
+
+            // COMPREHENSIVE DEBUG INFORMATION
+            System.out.println("\n🔍 ========== NAVIGATION DEBUG START ==========");
+            System.out.println("🔍 Current User: " + (currentUser != null ? currentUser.getUsername() : "null"));
+
+            if (currentUser != null) {
+                System.out.println("🔍 User Details:");
+                System.out.println("🔍   Username: " + currentUser.getUsername());
+                System.out.println("🔍   Role: '" + currentUser.getRole() + "'");
+                System.out.println("🔍   Role (trimmed): '" + currentUser.getRole().trim() + "'");
+                System.out.println("🔍   Role (lowercase): '" + currentUser.getRole().toLowerCase() + "'");
+                System.out.println("🔍   isAdmin(): " + currentUser.isAdmin());
+                System.out.println("🔍   'admin'.equals(role): " + "admin".equals(currentUser.getRole()));
+                System.out.println("🔍   'admin'.equals(role.trim()): " + "admin".equals(currentUser.getRole().trim()));
+                System.out.println("🔍   'admin'.equals(role.toLowerCase()): " + "admin".equals(currentUser.getRole().toLowerCase()));
+            }
+
             String fxmlFile;
             String title;
 
-            // Check if user is admin and redirect accordingly
-            if (currentUser != null && currentUser.isAdmin()) {
+            // Enhanced admin detection with multiple checks
+            boolean isAdminUser = false;
+            if (currentUser != null) {
+                // Multiple ways to check if admin
+                String userRole = currentUser.getRole();
+                isAdminUser = userRole != null && (
+                        "admin".equals(userRole.trim()) ||
+                                "admin".equals(userRole.trim().toLowerCase()) ||
+                                currentUser.isAdmin()
+                );
+
+                System.out.println("🔍 Admin Detection Result:");
+                System.out.println("🔍   Final isAdminUser: " + isAdminUser);
+            }
+
+            if (isAdminUser) {
                 fxmlFile = "/com/unmadgamer/lostandfoundfinal/admin-verification-dashboard.fxml";
                 title = "Admin Dashboard - Lost and Found System";
-                System.out.println("🚀 Redirecting admin to admin dashboard: " + currentUser.getUsername());
+                System.out.println("🚀 ADMIN USER CONFIRMED - Redirecting to: " + fxmlFile);
             } else {
                 fxmlFile = "/com/unmadgamer/lostandfoundfinal/dashboard.fxml";
                 title = "Dashboard - Lost and Found System";
-                System.out.println("🎉 Redirecting user to regular dashboard: " +
-                        (currentUser != null ? currentUser.getUsername() : "Unknown"));
+                System.out.println("🎉 REGULAR USER - Redirecting to: " + fxmlFile);
             }
 
+            // Debug: Check if FXML file exists
+            System.out.println("🔍 Checking FXML file: " + fxmlFile);
+            URL fxmlUrl = getClass().getResource(fxmlFile);
+            if (fxmlUrl == null) {
+                System.err.println("❌ FXML FILE NOT FOUND: " + fxmlFile);
+
+                // List all available FXML files for debugging
+                System.out.println("🔍 Available FXML files:");
+                try {
+                    java.nio.file.Path resourcesPath = java.nio.file.Paths.get("src/main/resources/com/unmadgamer/lostandfoundfinal");
+                    if (java.nio.file.Files.exists(resourcesPath)) {
+                        java.nio.file.Files.list(resourcesPath)
+                                .filter(path -> path.toString().endsWith(".fxml"))
+                                .forEach(path -> System.out.println("   📄 " + path.getFileName()));
+                    }
+                } catch (Exception e) {
+                    System.err.println("❌ Could not list FXML files: " + e.getMessage());
+                }
+
+                showError("Dashboard file not found: " + fxmlFile);
+                return;
+            }
+            System.out.println("✅ FXML file found: " + fxmlUrl);
+
             // Open appropriate dashboard
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
+            System.out.println("🔍 Loading FXML...");
+            FXMLLoader loader = new FXMLLoader(fxmlUrl);
             Parent root = loader.load();
+
+            System.out.println("✅ FXML loaded successfully, creating stage...");
 
             Stage dashboardStage = new Stage();
             dashboardStage.setTitle(title);
-            dashboardStage.setScene(new Scene(root, 600, 450));
+
+            // Set appropriate window size based on dashboard type
+            if (isAdminUser) {
+                dashboardStage.setScene(new Scene(root, 1200, 800)); // Larger for admin
+                System.out.println("✅ Setting up ADMIN dashboard window (1200x800)");
+            } else {
+                dashboardStage.setScene(new Scene(root, 800, 600)); // Regular size for users
+                System.out.println("✅ Setting up REGULAR USER dashboard window (800x600)");
+            }
+
             dashboardStage.show();
 
+            System.out.println("✅ " + title + " opened successfully!");
+            System.out.println("🔍 ========== NAVIGATION DEBUG END ==========\n");
+
         } catch (IOException e) {
-            showError("Cannot open dashboard: " + e.getMessage());
+            System.err.println("❌ Error opening dashboard: " + e.getMessage());
             e.printStackTrace();
+            showError("Cannot open dashboard: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            showError("Unexpected error: " + e.getMessage());
         }
     }
 
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

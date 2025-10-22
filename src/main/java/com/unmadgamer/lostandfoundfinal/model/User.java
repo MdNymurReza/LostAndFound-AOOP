@@ -38,6 +38,7 @@ public class User {
         this.firstName = firstName;
         this.lastName = lastName;
         this.role = role != null ? role : "user";
+        System.out.println("👤 User created: " + username + " with role: '" + this.role + "'");
     }
 
     // Getters and Setters
@@ -57,7 +58,10 @@ public class User {
     public void setLastName(String lastName) { this.lastName = lastName; }
 
     public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    public void setRole(String role) {
+        this.role = role;
+        System.out.println("🎯 Role set to: '" + role + "' for user: " + username);
+    }
 
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
@@ -97,9 +101,20 @@ public class User {
         return "U";
     }
 
-    // Role-based Methods
+    // Role-based Methods - FIXED VERSION
     public boolean isAdmin() {
-        return "admin".equalsIgnoreCase(role);
+        if (role == null) {
+            System.out.println("⚠️  Role is null for user: " + username);
+            return false;
+        }
+
+        // Trim and case-insensitive comparison
+        String trimmedRole = role.trim().toLowerCase();
+        boolean isAdmin = "admin".equals(trimmedRole);
+
+        System.out.println("🔍 User.isAdmin() check: " + username +
+                " | Role: '" + role + "' -> '" + trimmedRole + "' | isAdmin: " + isAdmin);
+        return isAdmin;
     }
 
     public boolean isUser() {
