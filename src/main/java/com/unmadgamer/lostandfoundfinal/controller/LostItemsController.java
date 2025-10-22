@@ -66,44 +66,43 @@ public class LostItemsController {
     }
 
     private Callback<TableColumn<LostFoundItem, Void>, TableCell<LostFoundItem, Void>> createActionCellFactory() {
-        return new Callback<TableColumn<LostFoundItem, Void>, TableCell<LostFoundItem, Void>>() {
+        return param -> new TableCell<LostFoundItem, Void>() {
+            private final Button claimButton = new Button("Claim");
+
+            {
+                claimButton.setOnAction((event) -> {
+                    LostFoundItem item = getTableView().getItems().get(getIndex());
+                    handleClaimItem(item);
+                });
+            }
+
             @Override
-            public TableCell<LostFoundItem, Void> call(final TableColumn<LostFoundItem, Void> param) {
-                return new TableCell<LostFoundItem, Void>() {
-                    private final Button claimButton = new Button("Claim");
-
-                    {
-                        claimButton.setOnAction((event) -> {
-                            LostFoundItem item = getTableView().getItems().get(getIndex());
-                            handleClaimItem(item);
-                        });
+            public void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    LostFoundItem currentItem = getTableView().getItems().get(getIndex());
+                    // Only show claim button if item can be claimed
+                    if (currentItem != null && currentItem.isVerified() &&
+                            "active".equalsIgnoreCase(currentItem.getStatus()) &&
+                            !currentItem.getReportedBy().equals(userService.getCurrentUser().getUsername())) {
+                        claimButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+                        setGraphic(claimButton);
+                    } else {
+                        setGraphic(null);
                     }
-
-                    @Override
-                    public void updateItem(Void item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty) {
-                            setGraphic(null);
-                        } else {
-                            LostFoundItem currentItem = getTableView().getItems().get(getIndex());
-                            // Only show claim button if item can be claimed
-                            if (currentItem.isVerified() && currentItem.isActive()) {
-                                claimButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
-                                setGraphic(claimButton);
-                            } else {
-                                setGraphic(null);
-                            }
-                        }
-                    }
-                };
+                }
             }
         };
     }
 
     private void setupFilters() {
-        categoryFilter.setItems(FXCollections.observableArrayList(
+        // Initialize category filter with all options
+        ObservableList<String> categories = FXCollections.observableArrayList(
                 "All", "Electronics", "Documents", "Clothing", "Accessories", "Other"
-        ));
+        );
+        categoryFilter.setItems(categories);
         categoryFilter.setValue("All");
 
         // Search functionality
@@ -114,38 +113,55 @@ public class LostItemsController {
     private void loadItems() {
         itemService.refreshItems(); // Force refresh from JSON
         List<LostFoundItem> items = itemService.getAvailableLostItems();
-        allItems.setAll(items);
-        filteredItems.setAll(items);
-        System.out.println("✅ Loaded " + items.size() + " available lost items");
+        if (items != null) {
+            allItems.setAll(items);
+            filteredItems.setAll(items);
+            System.out.println("✅ Loaded " + items.size() + " available lost items");
 
-        // Debug: Print each item
-        for (LostFoundItem item : items) {
-            System.out.println("   - " + item.getItemName() + " | " + item.getStatus() + " | " + item.getReportedBy());
+            // Debug: Print each item
+            for (LostFoundItem item : items) {
+                System.out.println("   - " + item.getItemName() + " | " + item.getStatus() + " | " + item.getReportedBy());
+            }
+        } else {
+            allItems.clear();
+            filteredItems.clear();
+            System.out.println("⚠️ No lost items available");
         }
     }
 
     private void filterItems() {
+        if (allItems == null || allItems.isEmpty()) {
+            return;
+        }
+
         String searchText = searchField.getText().toLowerCase();
         String category = categoryFilter.getValue();
 
         List<LostFoundItem> filtered = allItems.stream()
-                .filter(item ->
-                        item.getItemName().toLowerCase().contains(searchText) ||
+                .filter(item -> item != null &&
+                        (item.getItemName().toLowerCase().contains(searchText) ||
                                 item.getDescription().toLowerCase().contains(searchText) ||
-                                item.getLocation().toLowerCase().contains(searchText))
-                .filter(item -> category.equals("All") || item.getCategory().equals(category))
+                                item.getLocation().toLowerCase().contains(searchText)))
+                .filter(item -> category == null || "All".equals(category) || item.getCategory().equals(category))
                 .collect(Collectors.toList());
 
         filteredItems.setAll(filtered);
     }
 
     private void updateWelcomeMessage() {
-        String username = userService.getCurrentUser().getUsername();
-        welcomeLabel.setText("Welcome, " + username + "! Browse lost items below.");
+        if (userService.getCurrentUser() != null) {
+            String username = userService.getCurrentUser().getUsername();
+            welcomeLabel.setText("Welcome, " + username + "! Browse lost items below.");
+        }
     }
 
     @FXML
     private void handleClaimItem(LostFoundItem item) {
+        if (item == null || userService.getCurrentUser() == null) {
+            showAlert("Error", "Invalid item or user.", Alert.AlertType.ERROR);
+            return;
+        }
+
         String currentUser = userService.getCurrentUser().getUsername();
 
         // Check if user is trying to claim their own item
@@ -204,7 +220,9 @@ public class LostItemsController {
     private void handleClearFilters() {
         searchField.clear();
         categoryFilter.setValue("All");
-        filteredItems.setAll(allItems);
+        if (allItems != null) {
+            filteredItems.setAll(allItems);
+        }
     }
 
     @FXML

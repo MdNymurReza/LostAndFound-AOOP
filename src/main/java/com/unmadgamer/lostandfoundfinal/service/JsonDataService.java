@@ -1,5 +1,6 @@
 package com.unmadgamer.lostandfoundfinal.service;
 
+import com.fasterxml.jackson.core.ObjectCodec;
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
 import com.unmadgamer.lostandfoundfinal.model.LostItem;
 import com.unmadgamer.lostandfoundfinal.model.FoundItem;
@@ -611,5 +612,10 @@ public class JsonDataService {
         } catch (Exception e) {
             System.err.println("❌ Error resetting data files: " + e.getMessage());
         }
+
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return this.objectMapper;
     }
 }

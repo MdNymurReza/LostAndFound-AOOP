@@ -4,6 +4,7 @@ import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
 import com.unmadgamer.lostandfoundfinal.model.LostItem;
 import com.unmadgamer.lostandfoundfinal.model.FoundItem;
 import com.unmadgamer.lostandfoundfinal.model.User;
+import com.unmadgamer.lostandfoundfinal.model.Conversation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -134,6 +135,9 @@ public class ItemService {
                         lostItem.setClaimedBy(claimant);
                         lostItem.setStatus("claimed");
                         System.out.println("✅ Lost item claimed: " + item.getItemName() + " by " + claimant);
+
+                        // AUTO-START CONVERSATION
+                        startClaimConversation(item, claimant);
                     }
                 } else if (item instanceof FoundItem) {
                     FoundItem foundItem = (FoundItem) item;
@@ -141,6 +145,9 @@ public class ItemService {
                         foundItem.claimItem(claimant);
                         foundItem.setStatus("claimed");
                         System.out.println("✅ Found item claimed: " + item.getItemName() + " by " + claimant);
+
+                        // AUTO-START CONVERSATION
+                        startClaimConversation(item, claimant);
                     }
                 }
 
@@ -149,6 +156,24 @@ public class ItemService {
             }
         }
         return false;
+    }
+
+    // NEW: Auto-start conversation when item is claimed
+    private void startClaimConversation(LostFoundItem item, String claimant) {
+        MessageService messageService = MessageService.getInstance();
+        String itemOwner = item.getReportedBy();
+
+        if (!claimant.equals(itemOwner)) {
+            Conversation conversation = messageService.startItemConversation(claimant, itemOwner, item.getId(), item.getItemName());
+
+            String claimMessage = String.format(
+                    "Hello! I believe the item '%s' might be mine. Could we discuss the details?",
+                    item.getItemName()
+            );
+            messageService.sendMessage(conversation.getId(), claimant, claimMessage);
+
+            System.out.println("✅ Auto-started conversation for item claim: " + item.getItemName());
+        }
     }
 
     // Get items for admin verification

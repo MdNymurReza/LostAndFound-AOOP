@@ -3,6 +3,7 @@ package com.unmadgamer.lostandfoundfinal.controller;
 import com.unmadgamer.lostandfoundfinal.model.User;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
+import com.unmadgamer.lostandfoundfinal.service.MessageService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -82,14 +83,23 @@ public class DashBoardController {
     @FXML
     private Button debugRewardsBtn;
 
+    // NEW: Messaging system
+    @FXML
+    private Button chatButton;
+
+    @FXML
+    private Label unreadMessagesBadge;
+
     private UserService userService;
     private User currentUser;
     private ItemService itemService;
+    private MessageService messageService;
 
     @FXML
     public void initialize() {
         userService = UserService.getInstance();
         itemService = ItemService.getInstance();
+        messageService = MessageService.getInstance();
         currentUser = userService.getCurrentUser();
 
         if (currentUser != null) {
@@ -142,6 +152,11 @@ public class DashBoardController {
         System.out.println("User reward points: " + currentUser.getRewardPoints());
         System.out.println("User items returned: " + currentUser.getItemsReturned());
         System.out.println("User reward tier: " + currentUser.getRewardTier());
+
+        // NEW: Debug messaging system
+        int unreadCount = messageService.getUnreadMessageCount(currentUser.getUsername());
+        System.out.println("Unread messages: " + unreadCount);
+
         System.out.println("=== END DATA STATE ===");
     }
 
@@ -173,6 +188,7 @@ public class DashBoardController {
         loadLeaderboard();
         updateAdminStats();
         updateRewardDisplay();
+        updateUnreadMessagesBadge(); // NEW: Update message badge
     }
 
     private void loadStatistics() {
@@ -262,6 +278,22 @@ public class DashBoardController {
             System.out.println("👑 Admin stats - Pending verification: " + pendingVerification +
                     ", Total verified: " + totalVerified +
                     ", Pending claims: " + pendingClaims);
+        }
+    }
+
+    // NEW: Update unread messages badge
+    private void updateUnreadMessagesBadge() {
+        int unreadCount = messageService.getUnreadMessageCount(currentUser.getUsername());
+
+        if (unreadCount > 0) {
+            unreadMessagesBadge.setText(String.valueOf(unreadCount));
+            unreadMessagesBadge.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 10; " +
+                    "-fx-padding: 2 5; -fx-background-radius: 10;");
+            unreadMessagesBadge.setVisible(true);
+            System.out.println("🔔 Unread messages: " + unreadCount);
+        } else {
+            unreadMessagesBadge.setVisible(false);
+            System.out.println("✅ No unread messages");
         }
     }
 
@@ -363,6 +395,111 @@ public class DashBoardController {
 
             showAlert("Reward System Guide", details, Alert.AlertType.INFORMATION);
         }
+    }
+
+    // ===== MESSAGING SYSTEM METHODS =====
+
+    @FXML
+    private void handleOpenChat() {
+        System.out.println("Clicked: Open Chat");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/unmadgamer/lostandfoundfinal/chat.fxml"));
+            Parent root = loader.load();
+
+            Stage chatStage = new Stage();
+            chatStage.setTitle("Messaging Center - Lost and Found System");
+            chatStage.setScene(new Scene(root, 800, 600));
+            chatStage.show();
+
+            // Refresh dashboard when chat window closes to update unread count
+            chatStage.setOnHidden(event -> {
+                System.out.println("💬 Chat window closed, refreshing dashboard...");
+                refreshDashboard();
+            });
+
+        } catch (IOException e) {
+            System.err.println("❌ Error opening chat: " + e.getMessage());
+            showError("Cannot open messaging center: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleTestReward() {
+        System.out.println("🧪 TESTING REWARD SYSTEM MANUALLY");
+
+        User currentUser = userService.getCurrentUser();
+        int currentPoints = currentUser.getRewardPoints();
+        int currentItems = currentUser.getItemsReturned();
+
+        // Manually add reward points
+        currentUser.addRewardPoints(50);
+        currentUser.incrementItemsReturned();
+
+        // Save to JSON
+        userService.saveUsers();
+
+        // Refresh from JSON to verify
+        userService.refreshUsers();
+        currentUser = userService.getCurrentUser();
+
+        // Refresh display
+        refreshDashboard();
+
+        System.out.println("🎁 Manually added 50 points to " + currentUser.getUsername());
+        System.out.println("📊 Points: " + currentPoints + " → " + currentUser.getRewardPoints());
+        System.out.println("📦 Items: " + currentItems + " → " + currentUser.getItemsReturned());
+
+        showAlert("Reward Test",
+                "Manually added 50 reward points!\n\n" +
+                        "Points: " + currentPoints + " → " + currentUser.getRewardPoints() + "\n" +
+                        "Items Returned: " + currentItems + " → " + currentUser.getItemsReturned() + "\n" +
+                        "If this works, the reward system IS functional!",
+                Alert.AlertType.INFORMATION);
+    }
+
+    @FXML
+    private void handleDebugRewardFlow() {
+        System.out.println("=== REWARD FLOW DEBUG ===");
+
+        // Check current user reward status
+        User currentUser = userService.getCurrentUser();
+        System.out.println("👤 Current User: " + currentUser.getUsername());
+        System.out.println("💰 Current Points: " + currentUser.getRewardPoints());
+        System.out.println("📦 Items Returned: " + currentUser.getItemsReturned());
+        System.out.println("💎 Tier: " + currentUser.getRewardTier());
+        System.out.println("Multiplier: " + currentUser.getTierMultiplier());
+        System.out.println("Next Tier: " + currentUser.getNextTierInfo());
+
+        // Check if there are any returned items for this user
+        int returnedItems = itemService.getReturnedItemsByUser(currentUser.getUsername()).size();
+        System.out.println("🔄 Returned Items for User: " + returnedItems);
+
+        // Check pending claims that could be approved
+        int pendingClaims = itemService.getPendingClaimItems().size();
+        System.out.println("⏳ Pending Claims in System: " + pendingClaims);
+
+        // Check all users reward status
+        System.out.println("=== ALL USERS REWARD STATUS ===");
+        for (User user : userService.getAllUsers()) {
+            System.out.println("   👤 " + user.getUsername() + " | Points: " + user.getRewardPoints() +
+                    " | Items: " + user.getItemsReturned() + " | Tier: " + user.getRewardTier());
+        }
+
+        // Check messaging system
+        int unreadMessages = messageService.getUnreadMessageCount(currentUser.getUsername());
+        System.out.println("💬 Unread Messages: " + unreadMessages);
+
+        System.out.println("=== END DEBUG ===");
+
+        showAlert("Reward Debug",
+                "Check console for detailed reward flow information.\n\n" +
+                        "Current User: " + currentUser.getUsername() + "\n" +
+                        "Points: " + currentUser.getRewardPoints() + "\n" +
+                        "Items Returned: " + currentUser.getItemsReturned() + "\n" +
+                        "Pending Claims: " + pendingClaims + "\n" +
+                        "Returned Items: " + returnedItems + "\n" +
+                        "Unread Messages: " + unreadMessages,
+                Alert.AlertType.INFORMATION);
     }
 
     // ===== NAVIGATION METHODS =====

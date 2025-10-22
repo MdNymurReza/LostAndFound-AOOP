@@ -79,14 +79,27 @@
                   <Font name="Calibri Bold" size="13.0" />
                </font>
             </Label>
+
+            <!-- Add Chat Button with Badge -->
+            <Button fx:id="chatButton" layoutX="11.0" layoutY="200.0" mnemonicParsing="false" onAction="#handleOpenChat" prefHeight="25.0" prefWidth="167.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="💬 Messages" textFill="#9b59b6" underline="true">
+               <font>
+                  <Font name="Arial Rounded MT Bold" size="13.0" />
+               </font>
+               <tooltip>
+                  <Tooltip text="Open messaging center" />
+               </tooltip>
+            </Button>
+            <Label fx:id="unreadMessagesBadge" layoutX="150.0" layoutY="200.0" prefHeight="18.0" prefWidth="25.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 10; -fx-padding: 2 5; -fx-background-radius: 10; -fx-alignment: center;" text="0" visible="false" />
+
             <!-- Add Logout Button -->
-            <Button fx:id="logoutButton" layoutX="11.0" layoutY="200.0" mnemonicParsing="false" onAction="#handleLogout" prefHeight="25.0" prefWidth="167.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Logout" textFill="#e74c3c" underline="true">
+            <Button fx:id="logoutButton" layoutX="11.0" layoutY="224.0" mnemonicParsing="false" onAction="#handleLogout" prefHeight="25.0" prefWidth="167.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Logout" textFill="#e74c3c" underline="true">
                <font>
                   <Font name="Arial Rounded MT Bold" size="13.0" />
                </font>
             </Button>
+
             <!-- Add this button to your dashboard.fxml in the sidebar -->
-            <Button fx:id="adminVerificationBtn" layoutX="11.0" layoutY="230.0" mnemonicParsing="false" onAction="#handleAdminVerification" prefHeight="25.0" prefWidth="167.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Admin Verification" textFill="#27ae60" underline="true">
+            <Button fx:id="adminVerificationBtn" layoutX="11.0" layoutY="248.0" mnemonicParsing="false" onAction="#handleAdminVerification" prefHeight="25.0" prefWidth="167.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="Admin Verification" textFill="#27ae60" underline="true">
                <font>
                   <Font name="Arial Rounded MT Bold" size="13.0" />
                </font>
@@ -276,14 +289,6 @@
                                        <Tooltip text="Check your current reward status and points" />
                                     </tooltip>
                                  </Button>
-<!--                                 <Button fx:id="debugRewardsBtn" onAction="#handleDebugRewards" prefWidth="120" style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 10;" text="Debug Rewards">-->
-<!--                                    <font>-->
-<!--                                       <Font name="Calibri Bold" size="12.0" />-->
-<!--                                    </font>-->
-<!--                                    <tooltip>-->
-<!--                                       <Tooltip text="Debug the reward system (check console)" />-->
-<!--                                    </tooltip>-->
-<!--                                 </Button>-->
                                  <Button onAction="#handleViewRewardDetails" prefWidth="120" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 5 10;" text="Reward Guide">
                                     <font>
                                        <Font name="Calibri Bold" size="12.0" />
@@ -340,22 +345,6 @@
                <Tooltip text="Refresh all dashboard statistics" />
             </tooltip>
          </Button>
-<!--         <Button onAction="#handleDataDebug" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 8 15;" text="🐛 Data Debug">-->
-<!--            <font>-->
-<!--               <Font name="Calibri Bold" size="12.0" />-->
-<!--            </font>-->
-<!--            <tooltip>-->
-<!--               <Tooltip text="Debug data state (check console)" />-->
-<!--            </tooltip>-->
-<!--         </Button>-->
-<!--         <Button onAction="#handleDataReset" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 8 15;" text="⚠️ Reset Data">-->
-<!--            <font>-->
-<!--               <Font name="Calibri Bold" size="12.0" />-->
-<!--            </font>-->
-<!--            <tooltip>-->
-<!--               <Tooltip text="Reset all data (Admin only)" />-->
-<!--            </tooltip>-->
-<!--         </Button>-->
       </HBox>
    </bottom>
 </BorderPane>
