@@ -146,10 +146,10 @@ public class AdminDashboardController {
                 } else {
                     LostFoundItem lostFoundItem = getTableView().getItems().get(getIndex());
                     if (lostFoundItem.isVerified()) {
-                        setText("✓ Verified");
+                        setText("Verified");
                         setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
                     } else {
-                        setText("⏳ Pending");
+                        setText("Pending");
                         setStyle("-fx-text-fill: #e67e22; -fx-font-weight: bold;");
                     }
                 }
@@ -192,11 +192,11 @@ public class AdminDashboardController {
         ObservableList<LostFoundItem> itemsData = FXCollections.observableArrayList(recentItems);
         recentItemsTable.setItems(itemsData);
 
-        System.out.println("📊 Admin Dashboard loaded:");
-        System.out.println("   👥 Users: " + allUsers.size());
-        System.out.println("   📦 Items: " + allItems.size());
-        System.out.println("   ⏳ Pending: " + pendingItems.size());
-        System.out.println("   ✅ Returned: " + returnedItems.size());
+        System.out.println("   Admin Dashboard loaded:");
+        System.out.println("   Users: " + allUsers.size());
+        System.out.println("   Items: " + allItems.size());
+        System.out.println("   Pending: " + pendingItems.size());
+        System.out.println("   Returned: " + returnedItems.size());
     }
 
     private void createCharts() {

@@ -71,7 +71,7 @@ public class ChatController implements MessageService.MessageListener {
         setupEventHandlers();
         startAutoRefresh();
 
-        System.out.println("✅ ChatController initialized for user: " + currentUser.getUsername());
+        System.out.println("ChatController initialized for user: " + currentUser.getUsername());
         updateUnreadCount();
 
         if (initialConversationId != null) {
@@ -406,7 +406,7 @@ public class ChatController implements MessageService.MessageListener {
     // Implement MessageListener interface for real-time updates
     @Override
     public void onNewMessage(Message message) {
-        System.out.println("📨 Real-time message received: " + message.getContent());
+        System.out.println("Real-time message received: " + message.getContent());
 
         // If this message belongs to the current conversation, display it
         if (currentConversation != null && currentConversation.getId().equals(message.getConversationId())) {
@@ -424,7 +424,7 @@ public class ChatController implements MessageService.MessageListener {
 
     @Override
     public void onConversationUpdated(Conversation conversation) {
-        System.out.println("🔄 Conversation updated: " + conversation.getId());
+        System.out.println("Conversation updated: " + conversation.getId());
 
         // Refresh if this is the current conversation
         if (currentConversation != null && currentConversation.getId().equals(conversation.getId())) {

@@ -103,7 +103,7 @@ public class DashBoardController {
         currentUser = userService.getCurrentUser();
 
         if (currentUser != null) {
-            System.out.println("🎯 Dashboard initialized for user: " + currentUser.getUsername());
+            System.out.println("Dashboard initialized for user: " + currentUser.getUsername());
             loadUserData();
             refreshDashboard();
             loadLeaderboard();
@@ -113,7 +113,7 @@ public class DashBoardController {
             // Debug data state
             debugDataState();
         } else {
-            System.err.println("❌ No current user found in dashboard");
+            System.err.println("No current user found in dashboard");
         }
     }
 
@@ -122,7 +122,7 @@ public class DashBoardController {
         if (currentUser != null && currentUser.isAdmin()) {
             adminVerificationBtn.setVisible(true);
             adminVerificationBtn.setManaged(true);
-            System.out.println("👑 Admin features enabled for: " + currentUser.getUsername());
+            System.out.println("Admin features enabled for: " + currentUser.getUsername());
         } else {
             adminVerificationBtn.setVisible(false);
             adminVerificationBtn.setManaged(false);
@@ -169,13 +169,13 @@ public class DashBoardController {
             Image profileImage = new Image(getClass().getResourceAsStream("/com/unmadgamer/lostandfoundfinal/images/profile.png"));
             profileImageView.setImage(profileImage);
         } catch (Exception e) {
-            System.out.println("ℹ️  Profile image not found, using default");
+            System.out.println("Profile image not found, using default");
         }
     }
 
     // Public method to refresh statistics (can be called from other controllers)
     public void refreshDashboard() {
-        System.out.println("🔄 Refreshing dashboard statistics...");
+        System.out.println("Refreshing dashboard statistics...");
 
         // Force refresh from JSON files
         itemService.refreshItems();
@@ -214,7 +214,7 @@ public class DashBoardController {
         returnedItemsLabel.setText(String.valueOf(returnedCount));
         rewardPointsLabel.setText(String.valueOf(rewardPoints));
 
-        System.out.println("📊 Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount +
+        System.out.println("Statistics loaded - Lost: " + lostCount + ", Found: " + foundCount +
                 ", Returned: " + returnedCount + ", Points: " + rewardPoints);
     }
 
@@ -251,7 +251,7 @@ public class DashBoardController {
                 }
             }
 
-            System.out.println("🎯 Reward display updated - Points: " + currentUser.getRewardPoints() +
+            System.out.println("Reward display updated - Points: " + currentUser.getRewardPoints() +
                     ", Items Returned: " + currentUser.getItemsReturned() +
                     ", Tier: " + currentUser.getRewardTier());
         }
@@ -275,7 +275,7 @@ public class DashBoardController {
                 verifiedItemsLabel.setText(String.valueOf(totalVerified));
             }
 
-            System.out.println("👑 Admin stats - Pending verification: " + pendingVerification +
+            System.out.println("Admin stats - Pending verification: " + pendingVerification +
                     ", Total verified: " + totalVerified +
                     ", Pending claims: " + pendingClaims);
         }
@@ -290,10 +290,10 @@ public class DashBoardController {
             unreadMessagesBadge.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 10; " +
                     "-fx-padding: 2 5; -fx-background-radius: 10;");
             unreadMessagesBadge.setVisible(true);
-            System.out.println("🔔 Unread messages: " + unreadCount);
+            System.out.println("Unread messages: " + unreadCount);
         } else {
             unreadMessagesBadge.setVisible(false);
-            System.out.println("✅ No unread messages");
+            System.out.println("No unread messages");
         }
     }
 
@@ -311,7 +311,7 @@ public class DashBoardController {
         rank3Label.setText("3. Sarah Johnson");
         score3Label.setText(String.valueOf(Math.max(0, userPoints - 20)));
 
-        System.out.println("🏆 Leaderboard loaded - User rank: #1 with " + userPoints + " points");
+        System.out.println("Leaderboard loaded - User rank: #1 with " + userPoints + " points");
     }
 
     // ===== REWARD SYSTEM METHODS =====
@@ -341,14 +341,14 @@ public class DashBoardController {
             String benefits = currentUser.getTierBenefits().replace("•", "\n•");
 
             showAlert("Reward System Status",
-                    "🏆 Reward System Status\n\n" +
-                            "👤 User: " + currentUser.getUsername() +
-                            "\n📊 Points: " + currentUser.getRewardPoints() +
-                            "\n📦 Items Returned: " + currentUser.getItemsReturned() +
-                            "\n💎 Tier: " + currentUser.getRewardTier() +
-                            "\n⭐ Multiplier: " + currentUser.getTierMultiplier() + "x" +
-                            "\n\n🎯 " + currentUser.getNextTierInfo() +
-                            "\n\nBenefits:\n" + benefits,
+                    "Reward System Status\n\n" +
+                            "Username: " + currentUser.getUsername() +
+                            "\nPoints: " + currentUser.getRewardPoints() +
+                            "\nItems Returned: " + currentUser.getItemsReturned() +
+                            "\nTier: " + currentUser.getRewardTier() +
+                            "\nMultiplier: " + currentUser.getTierMultiplier() + "x" +
+                            "\n" + currentUser.getNextTierInfo() +
+                            "\nBenefits:\n" + benefits,
                     Alert.AlertType.INFORMATION);
         }
     }
@@ -413,19 +413,19 @@ public class DashBoardController {
 
             // Refresh dashboard when chat window closes to update unread count
             chatStage.setOnHidden(event -> {
-                System.out.println("💬 Chat window closed, refreshing dashboard...");
+                System.out.println("Chat window closed, refreshing dashboard...");
                 refreshDashboard();
             });
 
         } catch (IOException e) {
-            System.err.println("❌ Error opening chat: " + e.getMessage());
+            System.err.println("Error opening chat: " + e.getMessage());
             showError("Cannot open messaging center: " + e.getMessage());
         }
     }
 
     @FXML
     private void handleTestReward() {
-        System.out.println("🧪 TESTING REWARD SYSTEM MANUALLY");
+        System.out.println("TESTING REWARD SYSTEM MANUALLY");
 
         User currentUser = userService.getCurrentUser();
         int currentPoints = currentUser.getRewardPoints();
@@ -445,9 +445,9 @@ public class DashBoardController {
         // Refresh display
         refreshDashboard();
 
-        System.out.println("🎁 Manually added 50 points to " + currentUser.getUsername());
-        System.out.println("📊 Points: " + currentPoints + " → " + currentUser.getRewardPoints());
-        System.out.println("📦 Items: " + currentItems + " → " + currentUser.getItemsReturned());
+        System.out.println("Manually added 50 points to " + currentUser.getUsername());
+        System.out.println("Points: " + currentPoints + " → " + currentUser.getRewardPoints());
+        System.out.println("Items: " + currentItems + " → " + currentUser.getItemsReturned());
 
         showAlert("Reward Test",
                 "Manually added 50 reward points!\n\n" +
@@ -463,10 +463,10 @@ public class DashBoardController {
 
         // Check current user reward status
         User currentUser = userService.getCurrentUser();
-        System.out.println("👤 Current User: " + currentUser.getUsername());
-        System.out.println("💰 Current Points: " + currentUser.getRewardPoints());
-        System.out.println("📦 Items Returned: " + currentUser.getItemsReturned());
-        System.out.println("💎 Tier: " + currentUser.getRewardTier());
+        System.out.println("Current User: " + currentUser.getUsername());
+        System.out.println("Current Points: " + currentUser.getRewardPoints());
+        System.out.println("Items Returned: " + currentUser.getItemsReturned());
+        System.out.println("Tier: " + currentUser.getRewardTier());
         System.out.println("Multiplier: " + currentUser.getTierMultiplier());
         System.out.println("Next Tier: " + currentUser.getNextTierInfo());
 
@@ -487,7 +487,7 @@ public class DashBoardController {
 
         // Check messaging system
         int unreadMessages = messageService.getUnreadMessageCount(currentUser.getUsername());
-        System.out.println("💬 Unread Messages: " + unreadMessages);
+        System.out.println("Unread Messages: " + unreadMessages);
 
         System.out.println("=== END DEBUG ===");
 
@@ -549,15 +549,15 @@ public class DashBoardController {
 
                 // Refresh dashboard when admin window closes
                 stage.setOnHidden(event -> {
-                    System.out.println("🔄 Admin verification dashboard closed, refreshing dashboard...");
+                    System.out.println("Admin verification dashboard closed, refreshing dashboard...");
                     refreshDashboard();
                 });
 
                 stage.show();
 
-                System.out.println("✅ Admin verification dashboard opened");
+                System.out.println("Admin verification dashboard opened");
             } catch (IOException e) {
-                System.err.println("❌ Error opening admin verification dashboard: " + e.getMessage());
+                System.err.println("Error opening admin verification dashboard: " + e.getMessage());
                 showError("Cannot open Verification Dashboard: " + e.getMessage());
             }
         } else {
@@ -628,7 +628,7 @@ public class DashBoardController {
             loginStage.setScene(new Scene(root, 660, 400));
             loginStage.show();
 
-            System.out.println("✅ Logout successful");
+            System.out.println("Logout successful");
         } catch (IOException e) {
             showError("Cannot logout: " + e.getMessage());
         }
@@ -639,11 +639,11 @@ public class DashBoardController {
     // Open window with callback for refresh
     private void openWindowWithCallback(String fxmlPath, String title) {
         try {
-            System.out.println("🚪 Attempting to open: " + fxmlPath);
+            System.out.println("Attempting to open: " + fxmlPath);
 
             java.net.URL url = getClass().getResource(fxmlPath);
             if (url == null) {
-                System.err.println("❌ FXML file not found: " + fxmlPath);
+                System.err.println("FXML file not found: " + fxmlPath);
                 showError("Cannot open " + title + ": File not found at " + fxmlPath);
                 return;
             }
@@ -658,16 +658,16 @@ public class DashBoardController {
 
             // When the form window closes, refresh the dashboard
             stage.setOnHidden(event -> {
-                System.out.println("🔄 " + title + " window closed, refreshing dashboard...");
+                System.out.println(" " + title + " window closed, refreshing dashboard...");
                 refreshDashboard();
             });
 
             stage.show();
 
-            System.out.println("✅ Successfully opened: " + title);
+            System.out.println("Successfully opened: " + title);
 
         } catch (Exception e) {
-            System.err.println("❌ Error opening " + title + ": " + e.getMessage());
+            System.err.println("Error opening " + title + ": " + e.getMessage());
             e.printStackTrace();
             showError("Cannot open " + title + ": " + e.getMessage());
         }

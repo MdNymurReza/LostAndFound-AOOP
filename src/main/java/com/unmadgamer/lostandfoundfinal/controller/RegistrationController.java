@@ -225,7 +225,7 @@ public class RegistrationController {
 
             Stage dashboardStage = new Stage();
             dashboardStage.setTitle("Dashboard - Lost and Found System");
-            dashboardStage.setScene(new Scene(root, 600, 450));
+            dashboardStage.setScene(new Scene(root, 750, 600));
             dashboardStage.show();
 
             System.out.println("✅ User registered and logged in: " + userService.getCurrentUser().getUsername());

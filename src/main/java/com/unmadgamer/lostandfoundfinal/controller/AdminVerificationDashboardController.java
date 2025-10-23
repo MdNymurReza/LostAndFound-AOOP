@@ -75,11 +75,11 @@ public class AdminVerificationDashboardController {
         adminWelcomeLabel.setText("Admin Verification Dashboard - Welcome " +
                 userService.getCurrentUser().getUsername() + "!");
 
-        System.out.println("✅ Admin Verification Dashboard initialized successfully");
+        System.out.println("Admin Verification Dashboard initialized successfully");
     }
 
     private void initializeTables() {
-        System.out.println("🔄 Setting up tables...");
+        System.out.println("Setting up tables...");
 
         // Pending verification table setup
         colPendingItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
@@ -216,7 +216,7 @@ public class AdminVerificationDashboardController {
         recentVerifiedTable.setItems(verifiedItems);
         pendingClaimsTable.setItems(pendingClaimItems);
 
-        System.out.println("✅ Tables setup completed");
+        System.out.println("Tables setup completed");
     }
 
     private void setupFilters() {
@@ -232,7 +232,7 @@ public class AdminVerificationDashboardController {
     }
 
     private void loadData() {
-        System.out.println("🔄 Loading dashboard data...");
+        System.out.println("Loading dashboard data...");
 
         try {
             // Load pending verification items
@@ -249,13 +249,13 @@ public class AdminVerificationDashboardController {
             List<LostFoundItem> claimList = itemService.getPendingClaimItems();
             pendingClaimItems.setAll(claimList);
 
-            System.out.println("📊 Admin Dashboard Data Loaded:");
-            System.out.println("   ⏳ Pending Verification: " + pendingList.size());
-            System.out.println("   ✅ Verified Items: " + verifiedList.size());
-            System.out.println("   📝 Pending Claims: " + claimList.size());
+            System.out.println("Admin Dashboard Data Loaded:");
+            System.out.println("   Pending Verification: " + pendingList.size());
+            System.out.println("   Verified Items: " + verifiedList.size());
+            System.out.println("   Pending Claims: " + claimList.size());
 
         } catch (Exception e) {
-            System.err.println("❌ Error loading dashboard data: " + e.getMessage());
+            System.err.println("Error loading dashboard data: " + e.getMessage());
             e.printStackTrace();
             showAlert("Data Load Error", "Failed to load dashboard data: " + e.getMessage(), Alert.AlertType.ERROR);
         }
@@ -298,13 +298,13 @@ public class AdminVerificationDashboardController {
 
         confirmation.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                System.out.println("🔄 Attempting to approve claim and award rewards...");
+                System.out.println("Attempting to approve claim and award rewards...");
                 if (itemService.approveClaim(item.getId(), adminUsername)) {
                     showAlert("Return Confirmed",
-                            "✅ Item return has been confirmed!\n\n" +
-                                    "🎁 50 reward points have been awarded\n" +
-                                    "📦 Item marked as successfully returned\n" +
-                                    "💎 Check user dashboard for updated rewards",
+                            "Item return has been confirmed!\n\n" +
+                                    "50 reward points have been awarded\n" +
+                                    "Item marked as successfully returned\n" +
+                                    "Check user dashboard for updated rewards",
                             Alert.AlertType.INFORMATION);
                     loadData();
                     updateStatistics();
@@ -385,8 +385,8 @@ public class AdminVerificationDashboardController {
                 details.append("Claimed by: ").append(lostItem.getClaimedBy()).append("\n");
                 details.append("Claim Status: ").append(lostItem.getClaimStatus()).append("\n");
                 if (lostItem.getClaimStatus().equals("approved")) {
-                    details.append("✅ This item has been returned to its owner\n");
-                    details.append("🎁 Reward points have been awarded\n");
+                    details.append("This item has been returned to its owner\n");
+                    details.append("Reward points have been awarded\n");
                 }
             }
         } else if (item instanceof FoundItem) {
@@ -396,8 +396,8 @@ public class AdminVerificationDashboardController {
                 details.append("Claimed by: ").append(foundItem.getClaimedBy()).append("\n");
                 details.append("Claim Status: ").append(foundItem.getClaimStatus()).append("\n");
                 if (foundItem.getClaimStatus().equals("approved")) {
-                    details.append("✅ This item has been returned to its owner\n");
-                    details.append("🎁 Reward points have been awarded\n");
+                    details.append("This item has been returned to its owner\n");
+                    details.append("Reward points have been awarded\n");
                 }
             }
         }
