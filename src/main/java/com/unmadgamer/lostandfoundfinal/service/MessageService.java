@@ -4,6 +4,8 @@ import com.unmadgamer.lostandfoundfinal.model.Conversation;
 import com.unmadgamer.lostandfoundfinal.model.Message;
 import com.unmadgamer.lostandfoundfinal.model.User;
 import com.fasterxml.jackson.core.type.TypeReference;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -18,11 +20,20 @@ public class MessageService {
     private final JsonDataService jsonDataService;
     private final UserService userService;
     private List<Conversation> conversations;
+    private ObservableList<Conversation> observableConversations;
     private static final String CONVERSATIONS_FILE = "data/conversations.json";
+    private List<MessageListener> messageListeners = new ArrayList<>();
+
+    // Interface for real-time message updates
+    public interface MessageListener {
+        void onNewMessage(Message message);
+        void onConversationUpdated(Conversation conversation);
+    }
 
     private MessageService() {
         this.jsonDataService = new JsonDataService();
         this.userService = UserService.getInstance();
+        this.observableConversations = FXCollections.observableArrayList();
         loadConversations();
         System.out.println("✅ MessageService initialized with " + conversations.size() + " conversations");
     }
@@ -32,6 +43,30 @@ public class MessageService {
             instance = new MessageService();
         }
         return instance;
+    }
+
+    // Add listener for real-time updates
+    public void addMessageListener(MessageListener listener) {
+        messageListeners.add(listener);
+    }
+
+    // Remove listener
+    public void removeMessageListener(MessageListener listener) {
+        messageListeners.remove(listener);
+    }
+
+    // Notify listeners about new message
+    private void notifyNewMessage(Message message) {
+        for (MessageListener listener : messageListeners) {
+            listener.onNewMessage(message);
+        }
+    }
+
+    // Notify listeners about conversation update
+    private void notifyConversationUpdated(Conversation conversation) {
+        for (MessageListener listener : messageListeners) {
+            listener.onConversationUpdated(conversation);
+        }
     }
 
     private void loadConversations() {
@@ -58,6 +93,9 @@ public class MessageService {
                 conversations = new ArrayList<>();
             }
 
+            // Update observable list
+            observableConversations.setAll(conversations);
+
             System.out.println("✅ Loaded " + conversations.size() + " conversations");
 
         } catch (Exception e) {
@@ -77,6 +115,9 @@ public class MessageService {
             Path tempFile = Paths.get(CONVERSATIONS_FILE + ".tmp");
             jsonDataService.getObjectMapper().writeValue(tempFile.toFile(), conversations);
             Files.move(tempFile, filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            // Update observable list after save
+            observableConversations.setAll(conversations);
 
             System.out.println("✅ Saved " + conversations.size() + " conversations");
 
@@ -109,6 +150,12 @@ public class MessageService {
                 .collect(Collectors.toList());
     }
 
+    // Get observable conversations for real-time updates
+    public ObservableList<Conversation> getObservableUserConversations(String username) {
+        return observableConversations.filtered(conv -> conv.involvesUser(username))
+                .sorted((c1, c2) -> c2.getLastMessageTime().compareTo(c1.getLastMessageTime()));
+    }
+
     public Optional<Conversation> getConversationById(String conversationId) {
         return conversations.stream()
                 .filter(conv -> conv.getId().equals(conversationId))
@@ -128,6 +175,10 @@ public class MessageService {
         conversation.addMessage(message);
         saveConversations();
 
+        // Notify listeners about new message
+        notifyNewMessage(message);
+        notifyConversationUpdated(conversation);
+
         System.out.println("✅ Message sent in conversation " + conversationId + ": " + content);
         return true;
     }
@@ -144,6 +195,10 @@ public class MessageService {
         conversation.addMessage(message);
         saveConversations();
 
+        // Notify listeners
+        notifyNewMessage(message);
+        notifyConversationUpdated(conversation);
+
         System.out.println("✅ System message sent: " + content);
         return true;
     }
@@ -152,6 +207,7 @@ public class MessageService {
         getConversationById(conversationId).ifPresent(conversation -> {
             conversation.markAsRead();
             saveConversations();
+            notifyConversationUpdated(conversation);
             System.out.println("✅ Marked conversation as read: " + conversationId);
         });
     }
@@ -177,6 +233,11 @@ public class MessageService {
     public void sendAdminMessageToUser(String adminUsername, String targetUsername, String content) {
         Conversation conversation = getOrCreateConversation(adminUsername, targetUsername, null);
         sendMessage(conversation.getId(), adminUsername, content);
+    }
+
+    // Force refresh from file (useful for multi-instance scenarios)
+    public void refreshFromFile() {
+        loadConversations();
     }
 
     public void debugConversations() {
