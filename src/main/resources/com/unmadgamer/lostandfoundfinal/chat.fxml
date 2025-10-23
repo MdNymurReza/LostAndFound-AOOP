@@ -8,9 +8,6 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Tooltip?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
@@ -20,25 +17,25 @@
 
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.unmadgamer.lostandfoundfinal.controller.ChatController">
     <left>
-        <VBox prefWidth="250.0" style="-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 0 1 0 0;" spacing="10">
+        <VBox prefWidth="250.0" spacing="10" style="-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 0 1 0 0;">
             <padding>
-                <Insets top="10.0" right="10.0" bottom="10.0" left="10.0" />
+                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
             </padding>
 
             <!-- Header -->
             <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 0 0 10 0;">
-                <Label text="💬 Messages" style="-fx-font-weight: bold; -fx-font-size: 18;">
+                <Label style="-fx-font-weight: bold; -fx-font-size: 18;" text="💬 Messages">
                     <font>
                         <Font name="System Bold" size="18.0" />
                     </font>
                 </Label>
-                <Label fx:id="unreadCountLabel" text="No unread messages" style="-fx-text-fill: #27ae60; -fx-font-size: 12;" />
+                <Label fx:id="unreadCountLabel" style="-fx-text-fill: #27ae60; -fx-font-size: 12;" text="No unread messages" />
             </HBox>
 
             <!-- Search and New Chat -->
-            <HBox spacing="5" alignment="CENTER">
-                <TextField fx:id="searchField" prefWidth="160.0" promptText="Search conversations..." styleClass="form-style" />
-                <Button fx:id="newChatButton" onAction="#startNewConversation" text="➕" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;">
+            <HBox alignment="CENTER" spacing="5">
+                <TextField fx:id="searchField" prefHeight="26.0" prefWidth="193.0" promptText="Search conversations..." styleClass="form-style" />
+                <Button fx:id="newChatButton" onAction="#startNewConversation" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="➕">
                     <tooltip>
                         <Tooltip text="Start new conversation" />
                     </tooltip>
@@ -46,32 +43,32 @@
             </HBox>
 
             <!-- Refresh Button -->
-            <Button onAction="#refreshConversations" text="🔄 Refresh" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" />
+            <Button onAction="#refreshConversations" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="🔄 Refresh" />
 
             <!-- Conversations List -->
-            <Label text="Conversations:" style="-fx-font-weight: bold; -fx-text-fill: #666; -fx-font-size: 12;" />
-            <ListView fx:id="conversationsList" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent; -fx-border-color: #e9ecef; -fx-border-radius: 5;" />
+            <Label style="-fx-font-weight: bold; -fx-text-fill: #666; -fx-font-size: 12;" text="Conversations:" />
+            <ListView fx:id="conversationsList" style="-fx-background-color: transparent; -fx-border-color: #e9ecef; -fx-border-radius: 5;" VBox.vgrow="ALWAYS" />
         </VBox>
     </left>
 
     <center>
         <VBox spacing="0" style="-fx-background-color: #ffffff;">
             <!-- Chat Header -->
-            <HBox style="-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 0 0 1 0; -fx-padding: 15;" alignment="CENTER_LEFT" spacing="10">
+            <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 0 0 1 0; -fx-padding: 15;">
                 <VBox spacing="2">
-                    <Label fx:id="chatWithLabel" text="Chat with: --" style="-fx-font-weight: bold; -fx-font-size: 16;">
+                    <Label fx:id="chatWithLabel" style="-fx-font-weight: bold; -fx-font-size: 16;" text="Chat with: --">
                         <font>
                             <Font name="System Bold" size="16.0" />
                         </font>
                     </Label>
-                    <Label fx:id="itemContextLabel" text="" style="-fx-text-fill: #666; -fx-font-size: 12;" visible="false" />
+                    <Label fx:id="itemContextLabel" style="-fx-text-fill: #666; -fx-font-size: 12;" text="" visible="false" />
                 </VBox>
-                <Circle fx:id="onlineStatus" radius="5.0" fill="#95a5a6" />
-                <Label fx:id="statusLabel" text="Offline" style="-fx-text-fill: #666; -fx-font-size: 12;" />
+                <Circle fx:id="onlineStatus" fill="#95a5a6" radius="5.0" />
+                <Label fx:id="statusLabel" style="-fx-text-fill: #666; -fx-font-size: 12;" text="Offline" />
 
                 <Pane HBox.hgrow="ALWAYS" />
 
-                <Button onAction="#handleBackToDashboard" text="← Dashboard" style="-fx-background-color: #6c757d; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;">
+                <Button onAction="#handleBackToDashboard" style="-fx-background-color: #6c757d; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="← Dashboard">
                     <tooltip>
                         <Tooltip text="Return to dashboard" />
                     </tooltip>
@@ -79,16 +76,16 @@
             </HBox>
 
             <!-- Messages Area -->
-            <ScrollPane fx:id="messagesScrollPane" VBox.vgrow="ALWAYS" style="-fx-background: white; -fx-border-color: transparent;" fitToWidth="true">
+            <ScrollPane fx:id="messagesScrollPane" fitToWidth="true" style="-fx-background: white; -fx-border-color: transparent;" VBox.vgrow="ALWAYS">
                 <VBox fx:id="messagesContainer" spacing="10" style="-fx-padding: 15;">
                     <!-- Messages will be dynamically added here -->
                 </VBox>
             </ScrollPane>
 
             <!-- No Conversation View -->
-            <VBox fx:id="noConversationView" alignment="CENTER" visible="true" managed="true" VBox.vgrow="ALWAYS" style="-fx-background-color: #f8f9fa;">
-                <Label fx:id="noConversationLabel" text="Select a conversation to start chatting" style="-fx-text-fill: #666; -fx-font-size: 14;" />
-                <Button onAction="#startNewConversation" text="Start New Conversation" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;">
+            <VBox fx:id="noConversationView" alignment="CENTER" managed="true" style="-fx-background-color: #f8f9fa;" visible="true" VBox.vgrow="ALWAYS">
+                <Label fx:id="noConversationLabel" style="-fx-text-fill: #666; -fx-font-size: 14;" text="Select a conversation to start chatting" />
+                <Button onAction="#startNewConversation" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;" text="Start New Conversation">
                     <font>
                         <Font name="System Bold" size="14.0" />
                     </font>
@@ -96,14 +93,14 @@
             </VBox>
 
             <!-- Message Input Area -->
-            <HBox style="-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 1 0 0 0; -fx-padding: 15;" spacing="10" alignment="CENTER">
-                <TextArea fx:id="messageInput" promptText="Type your message here..." wrapText="true" prefRowCount="2" HBox.hgrow="ALWAYS" style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 10;" />
-                <Button fx:id="sendButton" onAction="#sendMessage" text="Send" style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20; -fx-padding: 10 20;">
+            <HBox alignment="CENTER" spacing="10" style="-fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 1 0 0 0; -fx-padding: 15;">
+                <TextArea fx:id="messageInput" prefRowCount="2" promptText="Type your message here..." style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 10;" wrapText="true" HBox.hgrow="ALWAYS" />
+                <Button fx:id="sendButton" onAction="#sendMessage" prefHeight="41.0" prefWidth="113.0" style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20; -fx-padding: 10 20;" text="Send">
                     <font>
-                        <Font name="System Bold" size="14.0" />
+                        <Font name="System Bold" size="12.0" />
                     </font>
                     <tooltip>
-                        <Tooltip text="Send message (Enter)" />
+                        <Tooltip text="SEND" />
                     </tooltip>
                 </Button>
             </HBox>

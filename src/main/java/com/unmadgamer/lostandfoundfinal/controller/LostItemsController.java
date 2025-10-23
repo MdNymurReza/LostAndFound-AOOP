@@ -254,7 +254,7 @@ public class LostItemsController {
 
                 Stage dashboardStage = new Stage();
                 dashboardStage.setTitle("Dashboard - Lost and Found System");
-                dashboardStage.setScene(new Scene(root, 600, 530));
+                dashboardStage.setScene(new Scene(root, 750, 600));
                 dashboardStage.show();
             }
 

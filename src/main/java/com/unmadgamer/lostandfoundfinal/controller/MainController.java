@@ -38,7 +38,7 @@ public class MainController {
             Parent root = loader.load();
             Stage stage = new Stage();
             stage.setTitle("Dashboard - Lost and Found System");
-            stage.setScene(new Scene(root, 600, 450));
+            stage.setScene(new Scene(root, 750, 600));
             stage.show();
         } catch (IOException e) {
             showError("Cannot open Dashboard: " + e.getMessage());

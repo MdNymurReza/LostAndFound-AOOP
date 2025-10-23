@@ -1,73 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.unmadgamer.lostandfoundfinal.controller.FoundItemsController"
-      spacing="20" style="-fx-padding: 25; -fx-background-color: #f8f9fa;" prefHeight="600" prefWidth="1000">
+<VBox prefHeight="600" prefWidth="1000" spacing="20" style="-fx-padding: 25; -fx-background-color: #f8f9fa;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.unmadgamer.lostandfoundfinal.controller.FoundItemsController">
 
    <!-- Header -->
    <HBox alignment="CENTER_LEFT" spacing="15">
       <VBox spacing="5">
-         <Label text="Found Items" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-         <Label fx:id="welcomeLabel" text="Browse found items available for claim" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;"/>
+         <Label style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Found Items" />
+         <Label fx:id="welcomeLabel" style="-fx-text-fill: #7f8c8d; -fx-font-size: 14;" text="Browse found items available for claim" />
       </VBox>
-      <Region HBox.hgrow="ALWAYS"/>
-      <Button text="Report Found Item" onAction="#handleReportFoundItem"
-              style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
-      <Button text="Refresh" onAction="#handleRefresh"
-              style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
-      <Button text="Back to Dashboard" onAction="#handleBackToDashboard"
-              style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;"/>
+      <Region HBox.hgrow="ALWAYS" />
+      <Button onAction="#handleReportFoundItem" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;" text="Report Found Item" />
+      <Button onAction="#handleRefresh" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;" text="Refresh" />
+      <Button onAction="#handleBackToDashboard" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;" text="Back to Dashboard" />
    </HBox>
 
    <!-- Search and Filter Section -->
    <VBox spacing="10" style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 1);">
-      <Label text="Search &amp; Filter" style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-      <HBox spacing="15" alignment="CENTER_LEFT">
-         <TextField fx:id="searchField" promptText="Search found items..."
-                    style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8 15;"
-                    prefWidth="300"/>
-         <ComboBox fx:id="categoryFilter" promptText="Filter by category"
-                   style="-fx-background-radius: 8; -fx-border-radius: 8;"
-                   prefWidth="150"/>
-         <Region HBox.hgrow="ALWAYS"/>
-         <Button text="Search" onAction="#handleSearch"
-                 style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;"/>
-         <Button text="Clear Filters" onAction="#handleClearFilters"
-                 style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;"/>
+      <Label style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Search &amp; Filter" />
+      <HBox alignment="CENTER_LEFT" spacing="15">
+         <TextField fx:id="searchField" prefWidth="300" promptText="Search found items..." style="-fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8 15;" />
+         <ComboBox fx:id="categoryFilter" prefHeight="34.0" prefWidth="146.0" promptText="Filter by category" style="-fx-background-radius: 8; -fx-border-radius: 8;" />
+         <Region HBox.hgrow="ALWAYS" />
+         <Button onAction="#handleSearch" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;" text="Search" />
+         <Button onAction="#handleClearFilters" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;" text="Clear Filters" />
       </HBox>
    </VBox>
 
    <!-- Items Table -->
    <VBox spacing="10" VBox.vgrow="ALWAYS">
-      <Label text="Available Found Items" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
+      <Label style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #27ae60;" text="Available Found Items" />
       <TableView fx:id="itemsTable" VBox.vgrow="ALWAYS">
          <columns>
-            <TableColumn fx:id="colItemName" text="Item Name" prefWidth="150"/>
-            <TableColumn fx:id="colCategory" text="Category" prefWidth="120"/>
-            <TableColumn fx:id="colDescription" text="Description" prefWidth="200"/>
-            <TableColumn fx:id="colLocation" text="Location Found" prefWidth="120"/>
-            <TableColumn fx:id="colDate" text="Date Found" prefWidth="100"/>
-            <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
+            <TableColumn fx:id="colItemName" prefWidth="150" text="Item Name" />
+            <TableColumn fx:id="colCategory" prefWidth="120" text="Category" />
+            <TableColumn fx:id="colDescription" prefWidth="200" text="Description" />
+            <TableColumn fx:id="colLocation" prefWidth="120" text="Location Found" />
+            <TableColumn fx:id="colDate" prefWidth="100" text="Date Found" />
+            <TableColumn fx:id="colStatus" prefWidth="100" text="Status" />
             <TableColumn fx:id="colAction" prefWidth="100.0" text="Action" />
          </columns>
          <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
          </columnResizePolicy>
       </TableView>
-   </VBox>
-
-   <!-- Instructions -->
-   <VBox spacing="5" style="-fx-padding: 15; -fx-background-color: #d1ecf1; -fx-border-color: #bee5eb; -fx-border-radius: 8;">
-      <Label text="💡 How to Use:" style="-fx-font-weight: bold; -fx-text-fill: #0c5460;"/>
-      <Label text="• Double-click on any item to view detailed information" style="-fx-text-fill: #0c5460; -fx-font-size: 11;"/>
-      <Label text="• Click the 'Claim' button if you believe the item belongs to you" style="-fx-text-fill: #0c5460; -fx-font-size: 11;"/>
-      <Label text="• Use search and filters to find specific items" style="-fx-text-fill: #0c5460; -fx-font-size: 11;"/>
-      <Label text="• Only verified items can be claimed (marked with ✅)" style="-fx-text-fill: #0c5460; -fx-font-size: 11;"/>
-      <Label text="• You'll need to provide proof of ownership when claiming" style="-fx-text-fill: #0c5460; -fx-font-size: 11;"/>
    </VBox>
 </VBox>
