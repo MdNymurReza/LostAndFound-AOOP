@@ -1,6 +1,7 @@
 package com.unmadgamer.lostandfoundfinal.controller;
 
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
+import com.unmadgamer.lostandfoundfinal.model.FoundItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.collections.FXCollections;
@@ -67,9 +68,10 @@ public class FoundItemsController {
 
     private Callback<TableColumn<LostFoundItem, Void>, TableCell<LostFoundItem, Void>> createActionCellFactory() {
         return param -> new TableCell<LostFoundItem, Void>() {
-            private final Button claimButton = new Button("Claim");
+            private final Button claimButton = new Button("Claim Item");
 
             {
+                claimButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
                 claimButton.setOnAction((event) -> {
                     LostFoundItem item = getTableView().getItems().get(getIndex());
                     handleClaimItem(item);
@@ -83,12 +85,19 @@ public class FoundItemsController {
                     setGraphic(null);
                 } else {
                     LostFoundItem currentItem = getTableView().getItems().get(getIndex());
-                    // Only show claim button if item can be claimed
-                    if (currentItem != null && currentItem.isVerified() &&
+                    // Only show claim button for verified, active found items that don't belong to current user
+                    if (currentItem != null &&
+                            currentItem instanceof FoundItem &&
+                            currentItem.isVerified() &&
                             "active".equalsIgnoreCase(currentItem.getStatus()) &&
                             !currentItem.getReportedBy().equals(userService.getCurrentUser().getUsername())) {
-                        claimButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
-                        setGraphic(claimButton);
+
+                        FoundItem foundItem = (FoundItem) currentItem;
+                        if (foundItem.canBeClaimed()) {
+                            setGraphic(claimButton);
+                        } else {
+                            setGraphic(null);
+                        }
                     } else {
                         setGraphic(null);
                     }
@@ -170,18 +179,44 @@ public class FoundItemsController {
             return;
         }
 
+        // Ensure it's a FoundItem
+        if (!(item instanceof FoundItem)) {
+            showAlert("Invalid Item", "Only found items can be claimed.", Alert.AlertType.ERROR);
+            return;
+        }
+
+        FoundItem foundItem = (FoundItem) item;
+
+        // Check if item can be claimed
+        if (!foundItem.canBeClaimed()) {
+            showAlert("Cannot Claim", "This item cannot be claimed at this time. It may already be claimed or not verified.", Alert.AlertType.WARNING);
+            return;
+        }
+
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Claim Item");
-        confirmation.setHeaderText("Claim Found Item");
-        confirmation.setContentText("Are you sure this is your lost item: " + item.getItemName() + "?");
+        confirmation.setTitle("Claim Found Item");
+        confirmation.setHeaderText("Claim This Found Item");
+        confirmation.setContentText(
+                "Are you sure this found item belongs to you?\n\n" +
+                        "Item: " + foundItem.getItemName() + "\n" +
+                        "Category: " + foundItem.getCategory() + "\n" +
+                        "Location Found: " + foundItem.getLocation() + "\n\n" +
+                        "Once claimed, the item owner will be notified and an admin will verify the claim."
+        );
 
         confirmation.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                if (itemService.claimItem(item.getId(), currentUser)) {
-                    showAlert("Claim Submitted", "Your claim has been submitted for admin approval.", Alert.AlertType.INFORMATION);
+                if (itemService.claimItem(foundItem.getId(), currentUser)) {
+                    showAlert("Claim Submitted",
+                            "Your claim has been submitted for admin approval.\n\n" +
+                                    "A conversation has been started with the person who found this item. " +
+                                    "Please check your messages to provide more details.",
+                            Alert.AlertType.INFORMATION);
                     loadItems(); // Refresh the list
                 } else {
-                    showAlert("Claim Failed", "Unable to claim this item. It may have been already claimed.", Alert.AlertType.ERROR);
+                    showAlert("Claim Failed",
+                            "Unable to claim this item. It may have been already claimed by someone else.",
+                            Alert.AlertType.ERROR);
                 }
             }
         });

@@ -116,7 +116,7 @@ public class ItemService {
                 .collect(Collectors.toList());
     }
 
-    // Simple claim item method
+    // UPDATED: Only allow claiming of FoundItems
     public boolean claimItem(String itemId, String claimant) {
         Optional<LostFoundItem> itemOpt = items.stream()
                 .filter(item -> itemId.equals(item.getId()))
@@ -125,34 +125,25 @@ public class ItemService {
         if (itemOpt.isPresent()) {
             LostFoundItem item = itemOpt.get();
 
-            // Check if item can be claimed
-            if (item.isVerified() && item.isActive()) {
-                // Set item as claimed based on type
-                if (item instanceof LostItem) {
-                    LostItem lostItem = (LostItem) item;
-                    if (lostItem.canClaimFoundItem()) {
-                        lostItem.setClaimStatus("pending");
-                        lostItem.setClaimedBy(claimant);
-                        lostItem.setStatus("claimed");
-                        System.out.println("✅ Lost item claimed: " + item.getItemName() + " by " + claimant);
+            // Only allow claiming of FoundItems
+            if (item instanceof FoundItem) {
+                FoundItem foundItem = (FoundItem) item;
 
-                        // AUTO-START CONVERSATION
-                        startClaimConversation(item, claimant);
-                    }
-                } else if (item instanceof FoundItem) {
-                    FoundItem foundItem = (FoundItem) item;
-                    if (foundItem.canBeClaimed()) {
-                        foundItem.claimItem(claimant);
-                        foundItem.setStatus("claimed");
-                        System.out.println("✅ Found item claimed: " + item.getItemName() + " by " + claimant);
+                // Check if item can be claimed
+                if (foundItem.canBeClaimed()) {
+                    foundItem.claimItem(claimant);
+                    foundItem.setStatus("claimed");
+                    System.out.println("✅ Found item claimed: " + item.getItemName() + " by " + claimant);
 
-                        // AUTO-START CONVERSATION
-                        startClaimConversation(item, claimant);
-                    }
+                    // AUTO-START CONVERSATION
+                    startClaimConversation(item, claimant);
+                    saveItems();
+                    return true;
+                } else {
+                    System.err.println("❌ Found item cannot be claimed: " + item.getItemName());
                 }
-
-                saveItems();
-                return true;
+            } else {
+                System.err.println("❌ Cannot claim lost items. Only found items can be claimed.");
             }
         }
         return false;

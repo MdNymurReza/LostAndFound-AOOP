@@ -1,6 +1,7 @@
 package com.unmadgamer.lostandfoundfinal.controller;
 
 import com.unmadgamer.lostandfoundfinal.model.LostFoundItem;
+import com.unmadgamer.lostandfoundfinal.model.LostItem;
 import com.unmadgamer.lostandfoundfinal.service.ItemService;
 import com.unmadgamer.lostandfoundfinal.service.UserService;
 import javafx.collections.FXCollections;
@@ -57,7 +58,7 @@ public class LostItemsController {
         colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        // Add action column with claim button
+        // Add action column with view details button (NO CLAIM BUTTON)
         colAction.setCellFactory(createActionCellFactory());
 
         allItems = FXCollections.observableArrayList();
@@ -67,12 +68,13 @@ public class LostItemsController {
 
     private Callback<TableColumn<LostFoundItem, Void>, TableCell<LostFoundItem, Void>> createActionCellFactory() {
         return param -> new TableCell<LostFoundItem, Void>() {
-            private final Button claimButton = new Button("Claim");
+            private final Button viewDetailsButton = new Button("View Details");
 
             {
-                claimButton.setOnAction((event) -> {
+                viewDetailsButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold;");
+                viewDetailsButton.setOnAction((event) -> {
                     LostFoundItem item = getTableView().getItems().get(getIndex());
-                    handleClaimItem(item);
+                    showItemDetails(item);
                 });
             }
 
@@ -83,12 +85,8 @@ public class LostItemsController {
                     setGraphic(null);
                 } else {
                     LostFoundItem currentItem = getTableView().getItems().get(getIndex());
-                    // Only show claim button if item can be claimed
-                    if (currentItem != null && currentItem.isVerified() &&
-                            "active".equalsIgnoreCase(currentItem.getStatus()) &&
-                            !currentItem.getReportedBy().equals(userService.getCurrentUser().getUsername())) {
-                        claimButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
-                        setGraphic(claimButton);
+                    if (currentItem != null) {
+                        setGraphic(viewDetailsButton);
                     } else {
                         setGraphic(null);
                     }
@@ -155,36 +153,33 @@ public class LostItemsController {
         }
     }
 
-    @FXML
-    private void handleClaimItem(LostFoundItem item) {
-        if (item == null || userService.getCurrentUser() == null) {
-            showAlert("Error", "Invalid item or user.", Alert.AlertType.ERROR);
-            return;
+    private void showItemDetails(LostFoundItem item) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Item Details");
+        alert.setHeaderText(item.getItemName());
+
+        StringBuilder details = new StringBuilder();
+        details.append("Type: ").append(item.getType()).append("\n");
+        details.append("Category: ").append(item.getCategory()).append("\n");
+        details.append("Description: ").append(item.getDescription()).append("\n");
+        details.append("Location: ").append(item.getLocation()).append("\n");
+        details.append("Date: ").append(item.getDate()).append("\n");
+        details.append("Status: ").append(item.getStatus()).append("\n");
+        details.append("Verification: ").append(item.getVerificationStatus()).append("\n");
+
+        if (item instanceof LostItem) {
+            LostItem lostItem = (LostItem) item;
+            details.append("\n=== LOST ITEM DETAILS ===\n");
+            details.append("Lost Date: ").append(lostItem.getLostDate()).append("\n");
+            details.append("Reward: ").append(lostItem.getReward() != null ? lostItem.getReward() : "Not specified").append("\n");
+            details.append("Contact Info: ").append(lostItem.getContactInfo()).append("\n");
+            details.append("Reported By: ").append(lostItem.getReportedBy()).append("\n");
         }
 
-        String currentUser = userService.getCurrentUser().getUsername();
-
-        // Check if user is trying to claim their own item
-        if (item.getReportedBy().equals(currentUser)) {
-            showAlert("Cannot Claim Item", "You cannot claim your own lost item.", Alert.AlertType.WARNING);
-            return;
-        }
-
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Claim Item");
-        confirmation.setHeaderText("Claim Lost Item");
-        confirmation.setContentText("Are you sure you want to claim this item: " + item.getItemName() + "?");
-
-        confirmation.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                if (itemService.claimItem(item.getId(), currentUser)) {
-                    showAlert("Claim Submitted", "Your claim has been submitted for admin approval.", Alert.AlertType.INFORMATION);
-                    loadItems(); // Refresh the list
-                } else {
-                    showAlert("Claim Failed", "Unable to claim this item. It may have been already claimed.", Alert.AlertType.ERROR);
-                }
-            }
-        });
+        alert.setContentText(details.toString());
+        alert.setResizable(true);
+        alert.getDialogPane().setPrefSize(400, 400);
+        alert.showAndWait();
     }
 
     @FXML
